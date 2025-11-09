@@ -1,0 +1,14 @@
+A bold statement.footnoteref:[foobar]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "A bold statement.")
+             , Inline mempty (Footnote (Just (FootnoteId "foobar")) [])
+             ])
+      ]
+  }

@@ -1,0 +1,36 @@
+[#authors.green]
+* Edgar Allen Poe
+* Sheri S. Tepper
+* Bill Bryson
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "authors" ) , ( "role" , "green" ) ] )
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "Edgar Allen Poe") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "Sheri S. Tepper") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "Bill Bryson") ])
+                 ]
+             ])
+      ]
+  }

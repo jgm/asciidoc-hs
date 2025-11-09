@@ -1,0 +1,18 @@
+[#licenses.open]
+License:: MIT
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "licenses" ) , ( "role" , "open" ) ] )
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "License") ]
+               , [ Block mempty Nothing (Paragraph [ Inline mempty (Str "MIT") ])
+                 ]
+               )
+             ])
+      ]
+  }

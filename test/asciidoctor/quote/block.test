@@ -1,0 +1,41 @@
+____
+Dennis: Come and see the violence inherent in the system. Help! Help! I'm being repressed!
+
+King Arthur: Bloody peasant!
+
+Dennis: Oh, what a giveaway! Did you hear that? Did you hear that, eh? That's what I'm on about! Did you see him repressing me? You saw him, Didn't you?
+____
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (QuoteBlock
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "Dennis: Come and see the violence inherent in the system. Help! Help! I\8217m being repressed!")
+                    ])
+             , Block
+                 mempty
+                 Nothing
+                 (Paragraph [ Inline mempty (Str "King Arthur: Bloody peasant!") ])
+             , Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "Dennis: Oh, what a giveaway! Did you hear that? Did you hear that, eh? That\8217s what I\8217m on about! Did you see him repressing me? You saw him, Didn\8217t you?")
+                    ])
+             ])
+      ]
+  }

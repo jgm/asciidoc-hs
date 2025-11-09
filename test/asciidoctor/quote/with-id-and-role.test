@@ -1,0 +1,22 @@
+[quote, id="parking", role="startrek"]
+Everybody remember where we parked.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( []
+          , fromList [ ( "id" , "parking" ) , ( "role" , "startrek" ) ]
+          )
+          Nothing
+          (QuoteBlock
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "Everybody remember where we parked.") ])
+             ])
+      ]
+  }

@@ -1,0 +1,22 @@
+[qanda]
+.The most important questions
+What is the answer to the Ultimate Question?:: 42
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "qanda" ] , fromList [] )
+          (Just
+             (BlockTitle
+                [ Inline mempty (Str "The most important questions") ]))
+          (DefinitionList
+             [ ( [ Inline
+                     mempty (Str "What is the answer to the Ultimate Question?")
+                 ]
+               , [ Block mempty Nothing (Paragraph [ Inline mempty (Str "42") ]) ]
+               )
+             ])
+      ]
+  }

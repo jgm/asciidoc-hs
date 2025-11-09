@@ -1,0 +1,22 @@
+// Actual TOC content is rendered in the outline template, this template
+// usually renders just a "border".
+= Document Title
+:toc:
+
+== Cavern Glow
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Cavern Glow") ] [])
+      ]
+  }

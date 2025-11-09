@@ -1,0 +1,17 @@
+NOTE: This is a note.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Admonition
+             Note
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph [ Inline mempty (Str "This is a note.") ])
+             ])
+      ]
+  }

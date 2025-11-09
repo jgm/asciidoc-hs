@@ -1,0 +1,20 @@
+[options="nowrap"]
+----
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "options" , "nowrap" ) ] )
+          Nothing
+          (Listing
+             Nothing
+             [ SourceLine
+                 "ruby -e \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)\""
+                 Nothing
+             ])
+      ]
+  }

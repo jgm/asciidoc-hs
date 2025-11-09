@@ -1,0 +1,28 @@
+[abstract, id="open", role="example"]
+--
+This is an abstract quote block.
+Who knows what it really means?
+--
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "abstract" ]
+          , fromList [ ( "id" , "open" ) , ( "role" , "example" ) ]
+          )
+          Nothing
+          (OpenBlock
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "This is an abstract quote block.\nWho knows what it really means?")
+                    ])
+             ])
+      ]
+  }

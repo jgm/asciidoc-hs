@@ -1,0 +1,21 @@
+[source, ruby]
+----
+5.times do
+  print "Odelay!"
+end
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing
+             (Just (Language "ruby"))
+             [ SourceLine "5.times do" Nothing
+             , SourceLine "  print \"Odelay!\"" Nothing
+             , SourceLine "end" Nothing
+             ])
+      ]
+  }

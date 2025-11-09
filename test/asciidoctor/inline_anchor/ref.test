@@ -1,0 +1,16 @@
+[[bookmark-a]] Inline anchors make arbitrary content referenceable.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (InlineAnchor "bookmark-a" [])
+             , Inline
+                 mempty
+                 (Str " Inline anchors make arbitrary content referenceable.")
+             ])
+      ]
+  }

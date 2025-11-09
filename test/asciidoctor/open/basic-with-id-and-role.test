@@ -1,0 +1,26 @@
+[#open.example]
+--
+An open block can be an anonymous container,
+or it can masquerade as any other block.
+--
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "open" ) , ( "role" , "example" ) ] )
+          Nothing
+          (OpenBlock
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "An open block can be an anonymous container,\nor it can masquerade as any other block.")
+                    ])
+             ])
+      ]
+  }

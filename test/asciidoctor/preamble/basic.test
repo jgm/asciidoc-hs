@@ -1,0 +1,46 @@
+= The Dangerous and Thrilling Documentation Chronicles
+
+This journey begins on a bleary Monday morning.
+Our intrepid team is in desperate need of double shot mochas, but the milk expired eight days ago.
+
+== Cavern Glow
+The river rages through the cavern, rattling its content.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle =
+            [ Inline
+                mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
+            ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList []
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str
+                    "This journey begins on a bleary Monday morning.\nOur intrepid team is in desperate need of double shot mochas, but the milk expired eight days ago.")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Cavern Glow") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str "The river rages through the cavern, rattling its content.")
+                    ])
+             ])
+      ]
+  }

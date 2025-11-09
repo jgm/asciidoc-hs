@@ -1,0 +1,62 @@
+= Document Title
+:toc:
+:numbered:
+
+== Section 1
+
+:numbered!:
+
+== Unnumbered Section
+
+:numbered:
+
+== Section 2
+
+=== Section 2.1
+
+== Section 3
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "numbered" , "" ) , ( "toc" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Section 1") ]
+             [ Block
+                 mempty Nothing (Paragraph [ Inline mempty (Str ":numbered!:") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Unnumbered Section") ]
+             [ Block
+                 mempty Nothing (Paragraph [ Inline mempty (Str ":numbered:") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Section 2") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Section (Level 2) [ Inline mempty (Str "Section 2.1") ] [])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section 3") ] [])
+      ]
+  }

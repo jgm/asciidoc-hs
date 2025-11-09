@@ -1,0 +1,34 @@
+.Sample document
+====
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua.
+
+The document header is useful, but not required.
+====
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Sample document") ]))
+          (ExampleBlock
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor\nincididunt ut labore et dolore magna aliqua.")
+                    ])
+             , Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty (Str "The document header is useful, but not required.")
+                    ])
+             ])
+      ]
+  }

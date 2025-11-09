@@ -1,0 +1,69 @@
+[qanda]
+What is Asciidoctor?::
+* An implementation of the AsciiDoc processor in Ruby.
+* Fast text processor and publishing toolchain.
+
+Who is behind Asciidoctor?::
+Asciidoctor is lead by Dan Allen and Sarah White and has received contributions
+from many other individuals in Asciidoctor’s awesome community.
++
+AsciiDoc was started by Stuart Rackham.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "qanda" ] , fromList [] )
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "What is Asciidoctor?") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (List
+                        (BulletList (Level 1))
+                        [ ListItem
+                            Nothing
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Str "An implementation of the AsciiDoc processor in Ruby.")
+                                   ])
+                            ]
+                        , ListItem
+                            Nothing
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty (Str "Fast text processor and publishing toolchain.")
+                                   ])
+                            ]
+                        ])
+                 ]
+               )
+             , ( [ Inline mempty (Str "Who is behind Asciidoctor?") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty
+                            (Str
+                               "Asciidoctor is lead by Dan Allen and Sarah White and has received contributions\nfrom many other individuals in Asciidoctor\8217s awesome community.")
+                        ])
+                 , Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline mempty (Str "AsciiDoc was started by Stuart Rackham.") ])
+                 ]
+               )
+             ])
+      ]
+  }

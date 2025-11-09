@@ -1,0 +1,41 @@
+The hail-and-rainbow protocol can be initiated at five levels: double, tertiary, supernumerary,
+supermassive, and apocalyptic party.footnote:[The double hail-and-rainbow level makes my toes tingle.]
+A bold statement.footnoteref:[disclaimer,Opinions are my own.]
+
+Another outrageous statement.footnoteref:[disclaimer]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str
+                    "The hail-and-rainbow protocol can be initiated at five levels: double, tertiary, supernumerary,\nsupermassive, and apocalyptic party.")
+             , Inline
+                 mempty
+                 (Footnote
+                    Nothing
+                    [ Inline
+                        mempty
+                        (Str "The double hail-and-rainbow level makes my toes tingle.")
+                    ])
+             , Inline mempty (Str "\nA bold statement.")
+             , Inline
+                 mempty
+                 (Footnote
+                    (Just (FootnoteId "disclaimer"))
+                    [ Inline mempty (Str "Opinions are my own.") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Another outrageous statement.")
+             , Inline mempty (Footnote (Just (FootnoteId "disclaimer")) [])
+             ])
+      ]
+  }

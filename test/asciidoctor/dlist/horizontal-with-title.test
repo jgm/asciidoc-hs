@@ -1,0 +1,41 @@
+[horizontal]
+.Computer terminology for noobs
+Hard drive:: Permanent storage for operating system and/or user files.
+RAM:: Temporarily stores information the CPU uses during operation.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "horizontal" ] , fromList [] )
+          (Just
+             (BlockTitle
+                [ Inline mempty (Str "Computer terminology for noobs") ]))
+          (DefinitionList
+             [ ( [ Inline mempty (Str "Hard drive") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty
+                            (Str "Permanent storage for operating system and/or user files.")
+                        ])
+                 ]
+               )
+             , ( [ Inline mempty (Str "RAM") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty
+                            (Str
+                               "Temporarily stores information the CPU uses during operation.")
+                        ])
+                 ]
+               )
+             ])
+      ]
+  }

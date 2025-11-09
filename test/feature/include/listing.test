@@ -1,0 +1,18 @@
+[,asciidoc]
+----
+include::foo.adoc[]
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (IncludeListing
+             (Just (Language "asciidoc"))
+             "foo.adoc"
+             (Just
+                [ SourceLine ". one" Nothing , SourceLine ".. two" Nothing ]))
+      ]
+  }

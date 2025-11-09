@@ -1,0 +1,189 @@
+|===
+
+2*>m|This content is duplicated across two columns.
+
+It is aligned right horizontally.
+
+And it is monospaced.
+
+.3+^.>s|This cell spans 3 rows. The content is centered horizontally, aligned to the bottom of the cell, and strong.
+e|This content is emphasized.
+
+.^l|This content is aligned to the top of the cell and literal.
+
+a|
+[source]
+puts "This is a source block!"
+
+|===
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace
+                                       [ Inline
+                                           mempty
+                                           (Str "This content is duplicated across two columns.")
+                                       ])
+                                ])
+                         , Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace
+                                       [ Inline mempty (Str "It is aligned right horizontally.") ])
+                                ])
+                         , Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace [ Inline mempty (Str "And it is monospaced.") ])
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignRight
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace
+                                       [ Inline
+                                           mempty
+                                           (Str "This content is duplicated across two columns.")
+                                       ])
+                                ])
+                         , Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace
+                                       [ Inline mempty (Str "It is aligned right horizontally.") ])
+                                ])
+                         , Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Monospace [ Inline mempty (Str "And it is monospaced.") ])
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignRight
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Bold
+                                       [ Inline
+                                           mempty
+                                           (Str
+                                              "This cell spans 3 rows. The content is centered horizontally, aligned to the bottom of the cell, and strong.")
+                                       ])
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignCenter
+                     , cellVertAlign = Just AlignBottom
+                     , cellColspan = 1
+                     , cellRowspan = 3
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty
+                                    (Italic [ Inline mempty (Str "This content is emphasized.") ])
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (LiteralBlock
+                                "This content is aligned to the top of the cell and literal.\n\n")
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Just AlignMiddle
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Listing
+                                Nothing [ SourceLine "puts \"This is a source block!\"" Nothing ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      ]
+  }

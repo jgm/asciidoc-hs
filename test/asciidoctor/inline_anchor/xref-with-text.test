@@ -1,0 +1,18 @@
+The section <<page-break, Page break>> describes how to add a page break.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "The section ")
+             , Inline
+                 mempty
+                 (CrossReference
+                    "page-break" (Just [ Inline mempty (Str "Page break") ]))
+             , Inline mempty (Str " describes how to add a page break.")
+             ])
+      ]
+  }

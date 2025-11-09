@@ -1,0 +1,14 @@
+[qanda]
+Who knows the answer?::
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "qanda" ] , fromList [] )
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "Who knows the answer?") ] , [] ) ])
+      ]
+  }

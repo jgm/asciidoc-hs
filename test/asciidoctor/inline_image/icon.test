@@ -1,0 +1,15 @@
+:icons:
+icon:tags[]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing (Paragraph [ Inline mempty (Icon "tags") ])
+      ]
+  }

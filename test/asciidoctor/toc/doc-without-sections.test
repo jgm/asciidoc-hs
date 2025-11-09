@@ -1,0 +1,15 @@
+= Document Title
+:toc: macro
+
+toc::[]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "macro" ) ]
+        }
+  , docBlocks = [ Block mempty Nothing TOC ]
+  }

@@ -1,0 +1,170 @@
+Operating Systems::
+  Linux:::
+    . Fedora
+      * Desktop
+    . Ubuntu
+      * Desktop
+      * Server
+  BSD:::
+    . FreeBSD
+    . NetBSD
+
+Cloud Providers::
+  PaaS:::
+    . OpenShift
+    . CloudBees
+  IaaS:::
+    . Amazon EC2
+    . Rackspace
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "Operating Systems") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (DefinitionList
+                        [ ( [ Inline mempty (Str "Linux") ]
+                          , [ Block
+                                mempty
+                                Nothing
+                                (List
+                                   (OrderedList (Level 1))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "Fedora") ])
+                                       , Block
+                                           mempty
+                                           Nothing
+                                           (List
+                                              (BulletList (Level 1))
+                                              [ ListItem
+                                                  Nothing
+                                                  [ Block
+                                                      mempty
+                                                      Nothing
+                                                      (Paragraph [ Inline mempty (Str "Desktop") ])
+                                                  ]
+                                              ])
+                                       ]
+                                   , ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "Ubuntu") ])
+                                       , Block
+                                           mempty
+                                           Nothing
+                                           (List
+                                              (BulletList (Level 1))
+                                              [ ListItem
+                                                  Nothing
+                                                  [ Block
+                                                      mempty
+                                                      Nothing
+                                                      (Paragraph [ Inline mempty (Str "Desktop") ])
+                                                  ]
+                                              , ListItem
+                                                  Nothing
+                                                  [ Block
+                                                      mempty
+                                                      Nothing
+                                                      (Paragraph [ Inline mempty (Str "Server") ])
+                                                  ]
+                                              ])
+                                       ]
+                                   ])
+                            ]
+                          )
+                        , ( [ Inline mempty (Str "BSD") ]
+                          , [ Block
+                                mempty
+                                Nothing
+                                (List
+                                   (OrderedList (Level 1))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "FreeBSD") ])
+                                       ]
+                                   , ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "NetBSD") ])
+                                       ]
+                                   ])
+                            ]
+                          )
+                        ])
+                 ]
+               )
+             , ( [ Inline mempty (Str "Cloud Providers") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (DefinitionList
+                        [ ( [ Inline mempty (Str "PaaS") ]
+                          , [ Block
+                                mempty
+                                Nothing
+                                (List
+                                   (OrderedList (Level 1))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "OpenShift") ])
+                                       ]
+                                   , ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "CloudBees") ])
+                                       ]
+                                   ])
+                            ]
+                          )
+                        , ( [ Inline mempty (Str "IaaS") ]
+                          , [ Block
+                                mempty
+                                Nothing
+                                (List
+                                   (OrderedList (Level 1))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "Amazon EC2") ])
+                                       ]
+                                   , ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "Rackspace") ])
+                                       ]
+                                   ])
+                            ]
+                          )
+                        ])
+                 ]
+               )
+             ])
+      ]
+  }

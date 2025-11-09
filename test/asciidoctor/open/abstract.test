@@ -1,0 +1,21 @@
+[abstract]
+--
+This is an abstract quote block.
+--
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "abstract" ] , fromList [] )
+          Nothing
+          (OpenBlock
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is an abstract quote block.") ])
+             ])
+      ]
+  }

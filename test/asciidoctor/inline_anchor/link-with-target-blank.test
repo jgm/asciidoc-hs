@@ -1,0 +1,18 @@
+link:view-source:asciidoctor.org[Asciidoctor homepage^]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Link
+                    URLLink
+                    (Target "view-source:asciidoctor.org")
+                    [ Inline mempty (Str "Asciidoctor homepage^") ])
+             ])
+      ]
+  }

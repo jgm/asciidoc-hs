@@ -1,0 +1,17 @@
+.Asciidoctor
+License:: MIT
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Asciidoctor") ]))
+          (DefinitionList
+             [ ( [ Inline mempty (Str "License") ]
+               , [ Block mempty Nothing (Paragraph [ Inline mempty (Str "MIT") ])
+                 ]
+               )
+             ])
+      ]
+  }

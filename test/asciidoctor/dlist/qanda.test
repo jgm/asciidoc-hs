@@ -1,0 +1,31 @@
+[qanda]
+What is Asciidoctor?::
+  An implementation of the AsciiDoc processor in Ruby.
+What is the answer to the Ultimate Question?:: 42
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "qanda" ] , fromList [] )
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "What is Asciidoctor?") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty (Str "An implementation of the AsciiDoc processor in Ruby.")
+                        ])
+                 ]
+               )
+             , ( [ Inline
+                     mempty (Str "What is the answer to the Ultimate Question?")
+                 ]
+               , [ Block mempty Nothing (Paragraph [ Inline mempty (Str "42") ]) ]
+               )
+             ])
+      ]
+  }

@@ -1,0 +1,21 @@
+:icons:
+icon:heart[float="right"]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr ( [] , fromList [ ( "float" , "right" ) ] ) (Icon "heart")
+             ])
+      ]
+  }

@@ -1,0 +1,18 @@
+.Title of warning
+WARNING: This is a warning with title.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Title of warning") ]))
+          (Admonition
+             Warning
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph [ Inline mempty (Str "This is a warning with title.") ])
+             ])
+      ]
+  }

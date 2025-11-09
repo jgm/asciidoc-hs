@@ -1,0 +1,24 @@
+[verse, id="sandburg", role="center"]
+The fog comes
+on little cat feet.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "sandburg" ) , ( "role" , "center" ) ] )
+          Nothing
+          (Verse
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "The fog comes")
+                    , Inline mempty HardBreak
+                    , Inline mempty (Str "on little cat feet.")
+                    ])
+             ])
+      ]
+  }

@@ -1,0 +1,28 @@
+Paragraphs don't require any special markup in AsciiDoc.
+A paragraph is just one or more lines of consecutive text.
+
+To begin a new paragraph, separate it by at least one blank line.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str
+                    "Paragraphs don\8217t require any special markup in AsciiDoc.\nA paragraph is just one or more lines of consecutive text.")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str
+                    "To begin a new paragraph, separate it by at least one blank line.")
+             ])
+      ]
+  }

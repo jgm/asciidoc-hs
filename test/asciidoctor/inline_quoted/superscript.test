@@ -1,0 +1,14 @@
+^super^chunky bacon
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Superscript [ Inline mempty (Str "super") ])
+             , Inline mempty (Str "chunky bacon")
+             ])
+      ]
+  }

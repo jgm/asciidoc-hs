@@ -1,0 +1,15 @@
+Definition without a description::
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "Definition without a description") ]
+               , []
+               )
+             ])
+      ]
+  }

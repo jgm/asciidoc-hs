@@ -1,0 +1,22 @@
+:stem:
+[stem]
+.Equation
+++++
+sqrt(4) = 2
+++++
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "stem" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Equation") ]))
+          (MathBlock Nothing "sqrt(4) = 2\n")
+      ]
+  }

@@ -1,0 +1,22 @@
+[#important-1.red]
+IMPORTANT: This is an important notice with id and role.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "important-1" ) , ( "role" , "red" ) ] )
+          Nothing
+          (Admonition
+             Important
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty (Str "This is an important notice with id and role.")
+                    ])
+             ])
+      ]
+  }

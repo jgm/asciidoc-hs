@@ -1,0 +1,44 @@
+// The toc node is used only with toc::[] macro!
+// Actual TOC content is rendered in the outline template, this template
+// usually renders just a "border".
+= Document Title
+:toc: macro
+
+== Introduction
+
+toc::[]
+
+== The Ravages of Writing
+
+=== A Recipe for Potion
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "macro" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Introduction") ]
+             [ Block mempty Nothing TOC ])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "The Ravages of Writing") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Section
+                    (Level 2) [ Inline mempty (Str "A Recipe for Potion") ] [])
+             ])
+      ]
+  }

@@ -1,0 +1,33 @@
+= Document Title
+:toc: macro
+
+toc::[]
+
+== The Ravages of Writing
+
+=== A Recipe for Potion
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "macro" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing TOC
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "The Ravages of Writing") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Section
+                    (Level 2) [ Inline mempty (Str "A Recipe for Potion") ] [])
+             ])
+      ]
+  }

@@ -1,0 +1,29 @@
+:icons:
+icon:download[link="http://rubygems.org/downloads/asciidoctor-1.5.2.gem"]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( []
+                 , fromList
+                     [ ( "link"
+                       , "http://rubygems.org/downloads/asciidoctor-1.5.2.gem"
+                       )
+                     ]
+                 )
+                 (Icon "download")
+             ])
+      ]
+  }

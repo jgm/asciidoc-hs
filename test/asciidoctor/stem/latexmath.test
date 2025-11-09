@@ -1,0 +1,22 @@
+:stem: latexmath
+[stem]
+++++
+C = \alpha + \beta Y^{\gamma} + \epsilon
+++++
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "stem" , "latexmath" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (MathBlock
+             Nothing "C = \\alpha + \\beta Y^{\\gamma} + \\epsilon\n")
+      ]
+  }

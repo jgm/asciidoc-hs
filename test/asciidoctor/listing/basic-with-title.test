@@ -1,0 +1,21 @@
+.Reading user input
+----
+echo -n "Please enter your name: "
+read name
+echo "Hello, $name!"
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Reading user input") ]))
+          (Listing
+             Nothing
+             [ SourceLine "echo -n \"Please enter your name: \"" Nothing
+             , SourceLine "read name" Nothing
+             , SourceLine "echo \"Hello, $name!\"" Nothing
+             ])
+      ]
+  }

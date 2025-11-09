@@ -1,0 +1,13 @@
+[#foo]
+== Section Title
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "foo" ) ] )
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section Title") ] [])
+      ]
+  }

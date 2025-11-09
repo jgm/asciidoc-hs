@@ -1,0 +1,11 @@
+== Section Level 1
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section Level 1") ] [])
+      ]
+  }

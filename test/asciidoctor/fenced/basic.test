@@ -1,0 +1,15 @@
+```ruby
+test = 3 <1>
+```
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing
+             (Just (Language "ruby"))
+             [ SourceLine "test = 3" (Just (Callout 1)) ])
+      ]
+  }

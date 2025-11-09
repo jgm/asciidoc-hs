@@ -1,0 +1,21 @@
+:sectanchors:
+:sectlinks:
+== Linked title with anchor
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList [ ( "sectanchors" , "" ) , ( "sectlinks" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1) [ Inline mempty (Str "Linked title with anchor") ] [])
+      ]
+  }

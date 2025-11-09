@@ -1,0 +1,16 @@
+= The Dangerous and Thrilling Documentation Chronicles
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle =
+            [ Inline
+                mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
+            ]
+        , docAuthors =
+            [ Author { authorName = "" , authorEmail = Nothing } ]
+        , docRevision = Nothing
+        , docAttributes = fromList []
+        }
+  , docBlocks = []
+  }

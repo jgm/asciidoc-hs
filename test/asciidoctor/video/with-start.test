@@ -1,0 +1,12 @@
+video::video_file.mp4[start=10]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "start" , "10" ) ] )
+          Nothing
+          (BlockVideo (Target "video_file.mp4"))
+      ]
+  }

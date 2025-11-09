@@ -1,0 +1,41 @@
+// Supported since Asciidoctor 1.5.6.
+:sectnums:
+:section-refsig: Sec.
+:xrefstyle: short
+Refer to <<install>>.
+
+[[install]]
+== Installation
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList
+              [ ( "section-refsig" , "Sec." )
+              , ( "sectnums" , "" )
+              , ( "xrefstyle" , "short" )
+              ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Refer to ")
+             , Inline mempty (CrossReference "install" (Just []))
+             , Inline mempty (Str ".")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (InlineAnchor "install" []) ])
+      , Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Installation") ] [])
+      ]
+  }

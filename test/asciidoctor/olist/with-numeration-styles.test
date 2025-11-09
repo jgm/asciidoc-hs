@@ -1,0 +1,84 @@
+[decimal]
+. level 1
+[upperalpha]
+.. level 2
+[loweralpha]
+... level 3
+[lowerroman]
+.... level 4
+[lowergreek]
+..... level 5
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "decimal" ] , fromList [] )
+          Nothing
+          (List
+             (OrderedList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "level 1") ])
+                 , Block
+                     Attr
+                     ( [ "upperalpha" ] , fromList [] )
+                     Nothing
+                     (List
+                        (OrderedList (Level 2))
+                        [ ListItem
+                            Nothing
+                            [ Block
+                                mempty Nothing (Paragraph [ Inline mempty (Str "level 2") ])
+                            , Block
+                                Attr
+                                ( [ "loweralpha" ] , fromList [] )
+                                Nothing
+                                (List
+                                   (OrderedList (Level 3))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "level 3") ])
+                                       , Block
+                                           Attr
+                                           ( [ "lowerroman" ] , fromList [] )
+                                           Nothing
+                                           (List
+                                              (OrderedList (Level 4))
+                                              [ ListItem
+                                                  Nothing
+                                                  [ Block
+                                                      mempty
+                                                      Nothing
+                                                      (Paragraph [ Inline mempty (Str "level 4") ])
+                                                  , Block
+                                                      Attr
+                                                      ( [ "lowergreek" ] , fromList [] )
+                                                      Nothing
+                                                      (List
+                                                         (OrderedList (Level 5))
+                                                         [ ListItem
+                                                             Nothing
+                                                             [ Block
+                                                                 mempty
+                                                                 Nothing
+                                                                 (Paragraph
+                                                                    [ Inline mempty (Str "level 5")
+                                                                    ])
+                                                             ]
+                                                         ])
+                                                  ]
+                                              ])
+                                       ]
+                                   ])
+                            ]
+                        ])
+                 ]
+             ])
+      ]
+  }

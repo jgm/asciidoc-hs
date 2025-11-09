@@ -1,0 +1,16 @@
+[why]`hello world!`
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "why" ) ] )
+                 (Monospace [ Inline mempty (Str "hello world!") ])
+             ])
+      ]
+  }

@@ -1,0 +1,36 @@
+[WARNING]
+====
+This is a warning with complex content.
+
+* It contains a list.
+====
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Admonition
+             Warning
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is a warning with complex content.") ])
+             , Block
+                 mempty
+                 Nothing
+                 (List
+                    (BulletList (Level 1))
+                    [ ListItem
+                        Nothing
+                        [ Block
+                            mempty
+                            Nothing
+                            (Paragraph [ Inline mempty (Str "It contains a list.") ])
+                        ]
+                    ])
+             ])
+      ]
+  }

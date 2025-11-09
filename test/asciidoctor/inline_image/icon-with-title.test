@@ -1,0 +1,23 @@
+:icons:
+icon:heart[title="I <3 Asciidoctor"]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "title" , "I <3 Asciidoctor" ) ] )
+                 (Icon "heart")
+             ])
+      ]
+  }

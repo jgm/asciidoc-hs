@@ -1,0 +1,29 @@
+// Supported since Asciidoctor 1.5.6.
+// This is an item (anchor) in the bibliography, not a link to it.
+[bibliography]
+* [[[prag, 1]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "bibliography" ] , fromList [] )
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty (BibliographyAnchor "prag" [ Inline mempty (Str "1") ])
+                        , Inline
+                            mempty (Str "Andy Hunt & Dave Thomas. The Pragmatic Programmer")
+                        ])
+                 ]
+             ])
+      ]
+  }

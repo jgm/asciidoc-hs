@@ -1,0 +1,20 @@
+= Document Title
+Kismet Chameleon
+v1.0
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors =
+            [ Author
+                { authorName = "Kismet Chameleon" , authorEmail = Nothing }
+            ]
+        , docRevision =
+            Just
+              Revision
+                { revVersion = "1.0" , revDate = Nothing , revRemark = Nothing }
+        , docAttributes = fromList []
+        }
+  , docBlocks = []
+  }

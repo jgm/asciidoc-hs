@@ -1,0 +1,18 @@
+:experimental:
+kbd:[Ctrl+Shift+N]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "experimental" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (Kbd [ "Ctrl" , "Shift" , "N" ]) ])
+      ]
+  }

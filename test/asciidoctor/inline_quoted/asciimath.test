@@ -1,0 +1,11 @@
+asciimath:[sqrt(4) = 2]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (Math (Just AsciiMath) "sqrt(4) = 2") ])
+      ]
+  }

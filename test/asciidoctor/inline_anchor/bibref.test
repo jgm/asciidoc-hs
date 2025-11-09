@@ -1,0 +1,27 @@
+// This is an item (anchor) in the bibliography, not a link to it.
+[bibliography]
+* [[[prag]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "bibliography" ] , fromList [] )
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline mempty (BibliographyAnchor "prag" [])
+                        , Inline
+                            mempty (Str "Andy Hunt & Dave Thomas. The Pragmatic Programmer")
+                        ])
+                 ]
+             ])
+      ]
+  }

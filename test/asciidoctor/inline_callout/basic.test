@@ -1,0 +1,15 @@
+[source]
+----
+"Hello world!" // <1>
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing
+             Nothing [ SourceLine "\"Hello world!\" //" (Just (Callout 1)) ])
+      ]
+  }

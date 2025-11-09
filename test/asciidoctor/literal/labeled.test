@@ -1,0 +1,11 @@
+[literal]
+gem install foobar
+gem --version
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty Nothing (LiteralBlock "gem install foobar\ngem --version\n")
+      ]
+  }

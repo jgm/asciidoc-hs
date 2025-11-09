@@ -1,0 +1,26 @@
+.After landing the cloaked Klingon bird of prey in Golden Gate park:
+[quote]
+Everybody remember where we parked.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just
+             (BlockTitle
+                [ Inline
+                    mempty
+                    (Str
+                       "After landing the cloaked Klingon bird of prey in Golden Gate park:")
+                ]))
+          (QuoteBlock
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "Everybody remember where we parked.") ])
+             ])
+      ]
+  }

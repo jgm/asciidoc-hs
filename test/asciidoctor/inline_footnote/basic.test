@@ -1,0 +1,21 @@
+Apocalyptic party.footnote:[The double hail-and-rainbow level makes my toes tingle.]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Apocalyptic party.")
+             , Inline
+                 mempty
+                 (Footnote
+                    Nothing
+                    [ Inline
+                        mempty
+                        (Str "The double hail-and-rainbow level makes my toes tingle.")
+                    ])
+             ])
+      ]
+  }

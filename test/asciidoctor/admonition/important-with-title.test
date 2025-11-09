@@ -1,0 +1,20 @@
+.Title of important notice
+IMPORTANT: This is an important notice with title.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just
+             (BlockTitle [ Inline mempty (Str "Title of important notice") ]))
+          (Admonition
+             Important
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is an important notice with title.") ])
+             ])
+      ]
+  }

@@ -1,0 +1,21 @@
+:icons:
+icon:tags[role="blue"]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr ( [] , fromList [ ( "role" , "blue" ) ] ) (Icon "tags")
+             ])
+      ]
+  }

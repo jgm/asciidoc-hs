@@ -1,0 +1,16 @@
+image:linux.svg[float="right"]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "float" , "right" ) ] )
+                 (InlineImage (Target "linux.svg") Nothing Nothing Nothing)
+             ])
+      ]
+  }

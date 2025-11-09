@@ -1,0 +1,17 @@
+[why]~sub~chunky bacon
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "why" ) ] )
+                 (Subscript [ Inline mempty (Str "sub") ])
+             , Inline mempty (Str "chunky bacon")
+             ])
+      ]
+  }

@@ -1,0 +1,16 @@
+[why]'`chunky bacon`'
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "why" ) ] )
+                 (SingleQuoted [ Inline mempty (Str "chunky bacon") ])
+             ])
+      ]
+  }

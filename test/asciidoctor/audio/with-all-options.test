@@ -1,0 +1,12 @@
+audio::ocean_waves.mp3[options="autoplay, nocontrols, loop"]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "options" , "autoplay, nocontrols, loop" ) ] )
+          Nothing
+          (BlockAudio (Target "ocean_waves.mp3"))
+      ]
+  }

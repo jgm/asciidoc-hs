@@ -1,0 +1,37 @@
+Asciidoctor:: An implementation of the AsciiDoc processor in Ruby.
+Asciidoc::
+  A text document format for writing notes, documentation, articles, books,
+  ebooks, slideshows, web pages, man pages and blogs.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "Asciidoctor") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty (Str "An implementation of the AsciiDoc processor in Ruby.")
+                        ])
+                 ]
+               )
+             , ( [ Inline mempty (Str "Asciidoc") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty
+                            (Str
+                               "A text document format for writing notes, documentation, articles, books,\n  ebooks, slideshows, web pages, man pages and blogs.")
+                        ])
+                 ]
+               )
+             ])
+      ]
+  }

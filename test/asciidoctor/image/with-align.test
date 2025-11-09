@@ -1,0 +1,12 @@
+image::sunset.jpg[align="center"]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "align" , "center" ) ] )
+          Nothing
+          (BlockImage (Target "sunset.jpg") Nothing Nothing Nothing)
+      ]
+  }

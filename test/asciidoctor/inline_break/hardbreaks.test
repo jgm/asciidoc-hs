@@ -1,0 +1,18 @@
+[%hardbreaks]
+Ruby is red.
+Java is black.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "options" , "hardbreaks" ) ] )
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Ruby is red.")
+             , Inline mempty HardBreak
+             , Inline mempty (Str "Java is black.")
+             ])
+      ]
+  }

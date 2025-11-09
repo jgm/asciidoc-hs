@@ -1,0 +1,32 @@
+`*_monospace bold italic phrase_*` and le``**__tt__**``ers
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Monospace
+                    [ Inline
+                        mempty
+                        (Bold
+                           [ Inline
+                               mempty
+                               (Italic [ Inline mempty (Str "monospace bold italic phrase") ])
+                           ])
+                    ])
+             , Inline mempty (Str " and le")
+             , Inline
+                 mempty
+                 (Monospace
+                    [ Inline
+                        mempty
+                        (Bold [ Inline mempty (Italic [ Inline mempty (Str "tt") ]) ])
+                    ])
+             , Inline mempty (Str "ers")
+             ])
+      ]
+  }

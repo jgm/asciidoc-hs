@@ -1,0 +1,39 @@
+include::foo.adoc[]
+
+and more
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Include
+             "foo.adoc"
+             (Just
+                [ Block
+                    mempty
+                    Nothing
+                    (List
+                       (OrderedList (Level 1))
+                       [ ListItem
+                           Nothing
+                           [ Block mempty Nothing (Paragraph [ Inline mempty (Str "one") ])
+                           , Block
+                               mempty
+                               Nothing
+                               (List
+                                  (OrderedList (Level 2))
+                                  [ ListItem
+                                      Nothing
+                                      [ Block
+                                          mempty Nothing (Paragraph [ Inline mempty (Str "two") ])
+                                      ]
+                                  ])
+                           ]
+                       ])
+                ]))
+      , Block
+          mempty Nothing (Paragraph [ Inline mempty (Str "and more") ])
+      ]
+  }

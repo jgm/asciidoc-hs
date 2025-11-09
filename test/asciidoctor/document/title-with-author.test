@@ -1,0 +1,21 @@
+= The Dangerous and Thrilling Documentation Chronicles
+Kismet Rainbow Chameleon <kismet@asciidoctor.org>
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle =
+            [ Inline
+                mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
+            ]
+        , docAuthors =
+            [ Author
+                { authorName = "Kismet Rainbow Chameleon"
+                , authorEmail = Just "kismet@asciidoctor.org"
+                }
+            ]
+        , docRevision = Nothing
+        , docAttributes = fromList []
+        }
+  , docBlocks = []
+  }

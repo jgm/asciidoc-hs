@@ -1,0 +1,20 @@
+[#note-1.yellow]
+NOTE: This is a note with id and role.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "note-1" ) , ( "role" , "yellow" ) ] )
+          Nothing
+          (Admonition
+             Note
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is a note with id and role.") ])
+             ])
+      ]
+  }

@@ -1,0 +1,21 @@
+[qanda, id=faq, role=galaxy]
+What is the answer to the Ultimate Question?:: 42
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "qanda" ]
+          , fromList [ ( "id" , "faq" ) , ( "role" , "galaxy" ) ]
+          )
+          Nothing
+          (DefinitionList
+             [ ( [ Inline
+                     mempty (Str "What is the answer to the Ultimate Question?")
+                 ]
+               , [ Block mempty Nothing (Paragraph [ Inline mempty (Str "42") ]) ]
+               )
+             ])
+      ]
+  }

@@ -1,0 +1,21 @@
+A bold statement.footnoteref:[disclaimer,Opinions are my own.]
+Another outrageous statement.footnoteref:[disclaimer]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "A bold statement.")
+             , Inline
+                 mempty
+                 (Footnote
+                    (Just (FootnoteId "disclaimer"))
+                    [ Inline mempty (Str "Opinions are my own.") ])
+             , Inline mempty (Str "\nAnother outrageous statement.")
+             , Inline mempty (Footnote (Just (FootnoteId "disclaimer")) [])
+             ])
+      ]
+  }

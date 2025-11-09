@@ -1,0 +1,12 @@
+ $ gem install foo
+ $ gem --version
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (LiteralBlock "$ gem install foo\n$ gem --version\n")
+      ]
+  }

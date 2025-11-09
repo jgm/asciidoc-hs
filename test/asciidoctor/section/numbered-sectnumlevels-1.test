@@ -1,0 +1,60 @@
+:numbered:
+:sectnumlevels: 1
+== Introduction to Asciidoctor
+
+== Quick Starts
+
+=== Usage
+
+==== Using the Command Line Interface
+
+=== Syntax
+
+== Terms and Concepts
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList [ ( "numbered" , "" ) , ( "sectnumlevels" , "1" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1) [ Inline mempty (Str "Introduction to Asciidoctor") ] [])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Quick Starts") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Section
+                    (Level 2)
+                    [ Inline mempty (Str "Usage") ]
+                    [ Block
+                        mempty
+                        Nothing
+                        (Section
+                           (Level 3)
+                           [ Inline mempty (Str "Using the Command Line Interface") ]
+                           [])
+                    ])
+             , Block
+                 mempty
+                 Nothing
+                 (Section (Level 2) [ Inline mempty (Str "Syntax") ] [])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Terms and Concepts") ] [])
+      ]
+  }

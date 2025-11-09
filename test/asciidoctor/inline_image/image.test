@@ -1,0 +1,14 @@
+image:linux.svg[]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (InlineImage (Target "linux.svg") Nothing Nothing Nothing)
+             ])
+      ]
+  }

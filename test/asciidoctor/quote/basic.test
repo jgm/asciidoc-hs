@@ -1,0 +1,24 @@
+[quote]
+Four score and seven years ago our fathers brought forth
+on this continent a new nation...
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (QuoteBlock
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "Four score and seven years ago our fathers brought forth\non this continent a new nation\8230")
+                    ])
+             ])
+      ]
+  }

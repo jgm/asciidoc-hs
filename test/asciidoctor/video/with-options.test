@@ -1,0 +1,12 @@
+video::video_file.mp4[options="autoplay, loop, nocontrols"]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "options" , "autoplay, loop, nocontrols" ) ] )
+          Nothing
+          (BlockVideo (Target "video_file.mp4"))
+      ]
+  }

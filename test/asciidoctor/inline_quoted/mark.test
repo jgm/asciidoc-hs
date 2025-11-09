@@ -1,0 +1,13 @@
+#chunky bacon#
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Highlight [ Inline mempty (Str "chunky bacon") ])
+             ])
+      ]
+  }

@@ -1,0 +1,23 @@
+:icons:
+icon:tags[height=25, width=35]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "icons" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "height" , "25" ) , ( "width" , "35" ) ] )
+                 (Icon "tags")
+             ])
+      ]
+  }

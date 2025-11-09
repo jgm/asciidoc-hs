@@ -1,0 +1,18 @@
+irc://irc.freenode.org/#asciidoctor[Asciidoctor IRC channel]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Link
+                    URLLink
+                    (Target "irc://irc.freenode.org/#asciidoctor")
+                    [ Inline mempty (Str "Asciidoctor IRC channel") ])
+             ])
+      ]
+  }

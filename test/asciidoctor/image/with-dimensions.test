@@ -1,0 +1,15 @@
+image::sunset.jpg[Shining sun, 300, 200]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (BlockImage
+             (Target "sunset.jpg")
+             (Just (AltText "Shining sun"))
+             (Just (Width 300))
+             (Just (Height 200)))
+      ]
+  }

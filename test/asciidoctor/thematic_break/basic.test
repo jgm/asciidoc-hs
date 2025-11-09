@@ -1,0 +1,6 @@
+'''
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks = [ Block mempty Nothing ThematicBreak ]
+  }

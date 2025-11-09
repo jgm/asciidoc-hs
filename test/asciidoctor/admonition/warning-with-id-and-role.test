@@ -1,0 +1,20 @@
+[#warning-1.red]
+WARNING: This is a warning with id and role.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "warning-1" ) , ( "role" , "red" ) ] )
+          Nothing
+          (Admonition
+             Warning
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is a warning with id and role.") ])
+             ])
+      ]
+  }

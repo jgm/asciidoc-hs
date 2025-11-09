@@ -1,0 +1,22 @@
+[source]
+.Odelay!
+----
+5.times do
+  print "Odelay!"
+end
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "Odelay!") ]))
+          (Listing
+             Nothing
+             [ SourceLine "5.times do" Nothing
+             , SourceLine "  print \"Odelay!\"" Nothing
+             , SourceLine "end" Nothing
+             ])
+      ]
+  }

@@ -1,0 +1,27 @@
+. Step 1
+. Step 2
+. Step 3
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             (OrderedList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "Step 1") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "Step 2") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "Step 3") ])
+                 ]
+             ])
+      ]
+  }

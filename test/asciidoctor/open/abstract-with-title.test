@@ -1,0 +1,28 @@
+[abstract]
+.Abstract title is abstract
+--
+This is an abstract quote block.
+Who knows what it really means?
+--
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "abstract" ] , fromList [] )
+          (Just
+             (BlockTitle [ Inline mempty (Str "Abstract title is abstract") ]))
+          (OpenBlock
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str
+                           "This is an abstract quote block.\nWho knows what it really means?")
+                    ])
+             ])
+      ]
+  }

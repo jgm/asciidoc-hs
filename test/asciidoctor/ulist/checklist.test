@@ -1,0 +1,38 @@
+- [*] checked
+- [x] also checked
+- [ ] not checked
+-     normal list item
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             CheckList
+             [ ListItem
+                 (Just Checked)
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "checked") ])
+                 ]
+             , ListItem
+                 (Just Checked)
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "also checked") ])
+                 ]
+             , ListItem
+                 (Just Unchecked)
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "not checked") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "normal list item") ])
+                 ]
+             ])
+      ]
+  }

@@ -1,0 +1,20 @@
+[#caution-1.red]
+CAUTION: This is a caution with id and role.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "caution-1" ) , ( "role" , "red" ) ] )
+          Nothing
+          (Admonition
+             Caution
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "This is a caution with id and role.") ])
+             ])
+      ]
+  }

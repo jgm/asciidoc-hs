@@ -1,0 +1,12 @@
+video::video_file.mp4[width=640, height=480]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "height" , "480" ) , ( "width" , "640" ) ] )
+          Nothing
+          (BlockVideo (Target "video_file.mp4"))
+      ]
+  }

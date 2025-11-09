@@ -1,0 +1,19 @@
+[#para-1.red]
+Paragraphs don't require any special markup in AsciiDoc.
+A paragraph is just one or more lines of consecutive text.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "para-1" ) , ( "role" , "red" ) ] )
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str
+                    "Paragraphs don\8217t require any special markup in AsciiDoc.\nA paragraph is just one or more lines of consecutive text.")
+             ])
+      ]
+  }

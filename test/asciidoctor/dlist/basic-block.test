@@ -1,0 +1,67 @@
+About::
+* An implementation of the AsciiDoc processor in Ruby.
+* Fast text processor and publishing toolchain.
+
+Authors::
+Asciidoctor is lead by Dan Allen and Sarah White and has received contributions
+from many other individuals in Asciidoctor’s awesome community.
++
+AsciiDoc was started by Stuart Rackham.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "About") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (List
+                        (BulletList (Level 1))
+                        [ ListItem
+                            Nothing
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Str "An implementation of the AsciiDoc processor in Ruby.")
+                                   ])
+                            ]
+                        , ListItem
+                            Nothing
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty (Str "Fast text processor and publishing toolchain.")
+                                   ])
+                            ]
+                        ])
+                 ]
+               )
+             , ( [ Inline mempty (Str "Authors") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline
+                            mempty
+                            (Str
+                               "Asciidoctor is lead by Dan Allen and Sarah White and has received contributions\nfrom many other individuals in Asciidoctor\8217s awesome community.")
+                        ])
+                 , Block
+                     mempty
+                     Nothing
+                     (Paragraph
+                        [ Inline mempty (Str "AsciiDoc was started by Stuart Rackham.") ])
+                 ]
+               )
+             ])
+      ]
+  }

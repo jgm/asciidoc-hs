@@ -1,0 +1,16 @@
+latexmath:[C = \alpha + \beta Y^{\gamma} + \epsilon]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Math
+                    (Just LaTeXMath) "C = \\alpha + \\beta Y^{\\gamma} + \\epsilon")
+             ])
+      ]
+  }

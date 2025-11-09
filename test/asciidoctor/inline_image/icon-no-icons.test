@@ -1,0 +1,8 @@
+icon:tags[]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block mempty Nothing (Paragraph [ Inline mempty (Icon "tags") ])
+      ]
+  }

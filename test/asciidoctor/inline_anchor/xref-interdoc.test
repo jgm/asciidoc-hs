@@ -1,0 +1,15 @@
+The section <<manual.adoc#page-break>> describes how to add a page break.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "The section ")
+             , Inline mempty (CrossReference "manual.adoc#page-break" Nothing)
+             , Inline mempty (Str " describes how to add a page break.")
+             ])
+      ]
+  }

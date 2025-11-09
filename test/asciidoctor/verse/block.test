@@ -1,0 +1,42 @@
+[verse]
+____
+The fog comes
+on little cat feet.
+
+It sits looking
+over harbor and city
+on silent haunches
+and then moves on.
+____
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Verse
+             Nothing
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "The fog comes")
+                    , Inline mempty HardBreak
+                    , Inline mempty (Str "on little cat feet.")
+                    ])
+             , Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "It sits looking")
+                    , Inline mempty HardBreak
+                    , Inline mempty (Str "over harbor and city")
+                    , Inline mempty HardBreak
+                    , Inline mempty (Str "on silent haunches")
+                    , Inline mempty HardBreak
+                    , Inline mempty (Str "and then moves on.")
+                    ])
+             ])
+      ]
+  }

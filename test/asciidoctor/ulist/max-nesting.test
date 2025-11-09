@@ -1,0 +1,80 @@
+* level 1
+** level 2
+*** level 3
+**** level 4
+***** level 5
+** level 2
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "level 1") ])
+                 , Block
+                     mempty
+                     Nothing
+                     (List
+                        (BulletList (Level 2))
+                        [ ListItem
+                            Nothing
+                            [ Block
+                                mempty Nothing (Paragraph [ Inline mempty (Str "level 2") ])
+                            , Block
+                                mempty
+                                Nothing
+                                (List
+                                   (BulletList (Level 3))
+                                   [ ListItem
+                                       Nothing
+                                       [ Block
+                                           mempty
+                                           Nothing
+                                           (Paragraph [ Inline mempty (Str "level 3") ])
+                                       , Block
+                                           mempty
+                                           Nothing
+                                           (List
+                                              (BulletList (Level 4))
+                                              [ ListItem
+                                                  Nothing
+                                                  [ Block
+                                                      mempty
+                                                      Nothing
+                                                      (Paragraph [ Inline mempty (Str "level 4") ])
+                                                  , Block
+                                                      mempty
+                                                      Nothing
+                                                      (List
+                                                         (BulletList (Level 5))
+                                                         [ ListItem
+                                                             Nothing
+                                                             [ Block
+                                                                 mempty
+                                                                 Nothing
+                                                                 (Paragraph
+                                                                    [ Inline mempty (Str "level 5")
+                                                                    ])
+                                                             ]
+                                                         ])
+                                                  ]
+                                              ])
+                                       ]
+                                   ])
+                            ]
+                        , ListItem
+                            Nothing
+                            [ Block
+                                mempty Nothing (Paragraph [ Inline mempty (Str "level 2") ])
+                            ]
+                        ])
+                 ]
+             ])
+      ]
+  }

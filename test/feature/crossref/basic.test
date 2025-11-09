@@ -1,0 +1,42 @@
+[#mysec]
+== My section
+
+In <<mysec>>, and in <<myanch>>
+
+[[myanch,My anchor]]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "mysec" ) ] )
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "My section") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "In ")
+                    , Inline
+                        mempty
+                        (CrossReference
+                           "mysec" (Just [ Inline mempty (Str "My section") ]))
+                    , Inline mempty (Str ", and in ")
+                    , Inline
+                        mempty
+                        (CrossReference
+                           "myanch" (Just [ Inline mempty (Str "My anchor") ]))
+                    ])
+             , Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty (InlineAnchor "myanch" [ Inline mempty (Str "My anchor") ])
+                    ])
+             ])
+      ]
+  }

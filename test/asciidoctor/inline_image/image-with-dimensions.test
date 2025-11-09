@@ -1,0 +1,19 @@
+image:linux.svg[Tux, 25, 35]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (InlineImage
+                    (Target "linux.svg")
+                    (Just (AltText "Tux"))
+                    (Just (Width 25))
+                    (Just (Height 35)))
+             ])
+      ]
+  }

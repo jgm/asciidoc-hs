@@ -1,0 +1,26 @@
+:linkattrs:
+http://discuss.asciidoctor.org/[*mailing list*, role="green"]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "linkattrs" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "green" ) ] )
+                 (Link
+                    URLLink
+                    (Target "http://discuss.asciidoctor.org/")
+                    [ Inline mempty (Bold [ Inline mempty (Str "mailing list") ]) ])
+             ])
+      ]
+  }

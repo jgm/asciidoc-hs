@@ -1,0 +1,17 @@
+IMPORTANT: This is an important notice.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Admonition
+             Important
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph [ Inline mempty (Str "This is an important notice.") ])
+             ])
+      ]
+  }

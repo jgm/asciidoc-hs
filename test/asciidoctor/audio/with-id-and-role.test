@@ -1,0 +1,13 @@
+[#ocean.wave]
+audio::ocean_waves.mp3[]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "ocean" ) , ( "role" , "wave" ) ] )
+          Nothing
+          (BlockAudio (Target "ocean_waves.mp3"))
+      ]
+  }

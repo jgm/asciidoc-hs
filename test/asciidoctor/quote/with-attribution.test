@@ -1,0 +1,22 @@
+[quote, Albert Einstein]
+A person who never made a mistake never tried anything new.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (QuoteBlock
+             (Just (Attribution "Albert Einstein"))
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline
+                        mempty
+                        (Str "A person who never made a mistake never tried anything new.")
+                    ])
+             ])
+      ]
+  }

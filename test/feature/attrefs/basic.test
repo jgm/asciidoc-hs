@@ -1,0 +1,24 @@
+= Title
+:foo: 333
+
+{foo} and *{foo}*
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "foo" , "333" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "333")
+             , Inline mempty (Str " and ")
+             , Inline mempty (Bold [ Inline mempty (Str "333") ])
+             ])
+      ]
+  }

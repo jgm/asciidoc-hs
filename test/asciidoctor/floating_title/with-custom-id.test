@@ -1,0 +1,14 @@
+[discrete, id=flying]
+== Discrete Title Level 1
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "flying" ) ] )
+          Nothing
+          (DiscreteHeading
+             (Level 1) [ Inline mempty (Str "Discrete Title Level 1") ])
+      ]
+  }

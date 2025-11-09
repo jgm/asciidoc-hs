@@ -1,0 +1,13 @@
+[discrete]
+====== Discrete Title Level 5
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (DiscreteHeading
+             (Level 5) [ Inline mempty (Str "Discrete Title Level 5") ])
+      ]
+  }

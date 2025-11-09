@@ -1,0 +1,20 @@
+= Document Title
+:toc:
+
+== Cavern Glow
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Cavern Glow") ] [])
+      ]
+  }

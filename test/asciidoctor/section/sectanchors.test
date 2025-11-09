@@ -1,0 +1,18 @@
+:sectanchors:
+== Title with anchor
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectanchors" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Title with anchor") ] [])
+      ]
+  }

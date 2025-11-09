@@ -1,0 +1,37 @@
+= Document Title
+:toc: macro
+
+== Introduction
+
+toc::[id="mytoc", role="taco"]
+
+== The Ravages of Writing
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "toc" , "macro" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Introduction") ]
+             [ Block
+                 Attr
+                 ( [] , fromList [ ( "id" , "mytoc" ) , ( "role" , "taco" ) ] )
+                 Nothing
+                 TOC
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section
+             (Level 1) [ Inline mempty (Str "The Ravages of Writing") ] [])
+      ]
+  }

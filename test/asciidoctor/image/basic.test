@@ -1,0 +1,11 @@
+image::sunset.jpg[]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (BlockImage (Target "sunset.jpg") Nothing Nothing Nothing)
+      ]
+  }

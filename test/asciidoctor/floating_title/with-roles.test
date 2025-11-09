@@ -1,0 +1,14 @@
+[discrete.flying.circus]
+=== Discrete Title Level 2
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [ "discrete.flying.circus" ] , fromList [] )
+          Nothing
+          (Section
+             (Level 1) [ Inline mempty (Str "Discrete Title Level 2") ] [])
+      ]
+  }

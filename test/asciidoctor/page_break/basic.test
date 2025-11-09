@@ -1,0 +1,18 @@
+Text on the first page
+
+<<<
+
+was breaked!
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (Str "Text on the first page") ])
+      , Block mempty Nothing PageBreak
+      , Block
+          mempty Nothing (Paragraph [ Inline mempty (Str "was breaked!") ])
+      ]
+  }

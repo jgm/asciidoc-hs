@@ -1,0 +1,139 @@
+[cols="a,e,h,l,m,s"]
+|===
+|image::sunset.jpg[AsciiDoc content]
+|Emphasized text
+|Styled like a header
+|Literal block
+|Monospaced text
+|Strong text
+|===
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just AsciiDocStyle
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just EmphasisStyle
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just HeaderStyle
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just LiteralStyle
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just MonospaceStyle
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Just StrongStyle
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (BlockImage
+                                (Target "sunset.jpg")
+                                (Just (AltText "AsciiDoc content"))
+                                Nothing
+                                Nothing)
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Italic [ Inline mempty (Str "Emphasized text") ])
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph [ Inline mempty (Str "Styled like a header") ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (LiteralBlock "Literal block\n") ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline
+                                    mempty (Monospace [ Inline mempty (Str "Monospaced text") ])
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Bold [ Inline mempty (Str "Strong text") ]) ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      ]
+  }

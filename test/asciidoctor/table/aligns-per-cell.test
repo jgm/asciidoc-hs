@@ -1,0 +1,186 @@
+[cols="3"]
+|===
+^|Prefix the +{vbar}+ with +{caret}+ to center content horizontally
+<|Prefix the +{vbar}+ with +<+ to align the content to the left horizontally
+>|Prefix the +{vbar}+ with +>+ to align the content to the right horizontally
+
+.^|Prefix the +{vbar}+ with a +.+ and +{caret}+ to center the content in the cell vertically
+.<|Prefix the +{vbar}+ with a +.+ and +<+ to align the content to the top of the cell
+.>|Prefix the +{vbar}+ with a +.+ and +>+ to align the content to the bottom of the cell
+
+3+^.^|This content spans three columns (+3{plus}+) and is centered horizontally (+{caret}+) and vertically (+.{caret}+) within the cell.
+
+|===
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Just 3
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with ")
+                                , Inline mempty (Str "{caret}")
+                                , Inline mempty (Str " to center content horizontally")
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignCenter
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with ")
+                                , Inline mempty (Str "<")
+                                , Inline
+                                    mempty (Str " to align the content to the left horizontally")
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignLeft
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with ")
+                                , Inline mempty (Str ">")
+                                , Inline
+                                    mempty (Str " to align the content to the right horizontally")
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignRight
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with a ")
+                                , Inline mempty (Str ".")
+                                , Inline mempty (Str " and ")
+                                , Inline mempty (Str "{caret}")
+                                , Inline
+                                    mempty (Str " to center the content in the cell vertically")
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Just AlignMiddle
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with a ")
+                                , Inline mempty (Str ".")
+                                , Inline mempty (Str " and ")
+                                , Inline mempty (Str "<")
+                                , Inline
+                                    mempty (Str " to align the content to the top of the cell")
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Just AlignTop
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with a ")
+                                , Inline mempty (Str ".")
+                                , Inline mempty (Str " and ")
+                                , Inline mempty (Str ">")
+                                , Inline
+                                    mempty (Str " to align the content to the bottom of the cell")
+                                ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Just AlignBottom
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "This content spans three columns (")
+                                , Inline mempty (Str "3{plus}")
+                                , Inline mempty (Str ") and is centered horizontally (")
+                                , Inline mempty (Str "{caret}")
+                                , Inline mempty (Str ") and vertically (")
+                                , Inline mempty (Str ".{caret}")
+                                , Inline mempty (Str ") within the cell.")
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignCenter
+                     , cellVertAlign = Just AlignMiddle
+                     , cellColspan = 3
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      ]
+  }

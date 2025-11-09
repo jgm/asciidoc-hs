@@ -1,0 +1,17 @@
+CAUTION: This is a caution.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Admonition
+             Caution
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph [ Inline mempty (Str "This is a caution.") ])
+             ])
+      ]
+  }

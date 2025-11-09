@@ -1,0 +1,14 @@
+++++
+<p>Allons-y!</p>
+image:tiger.png[]
+++++
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (PassthroughBlock "<p>Allons-y!</p>\nimage:tiger.png[]\n")
+      ]
+  }

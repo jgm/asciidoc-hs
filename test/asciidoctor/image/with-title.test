@@ -1,0 +1,12 @@
+.A mountain sunset
+image::sunset.jpg[]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          (Just (BlockTitle [ Inline mempty (Str "A mountain sunset") ]))
+          (BlockImage (Target "sunset.jpg") Nothing Nothing Nothing)
+      ]
+  }

@@ -1,0 +1,13 @@
+`hello world!`
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Monospace [ Inline mempty (Str "hello world!") ])
+             ])
+      ]
+  }

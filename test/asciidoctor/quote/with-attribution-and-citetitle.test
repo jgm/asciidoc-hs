@@ -1,0 +1,21 @@
+[quote, Captain James T. Kirk, Star Trek IV: The Voyage Home]
+Everybody remember where we parked.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (QuoteBlock
+             (Just
+                (Attribution
+                   "Captain James T. Kirk, Star Trek IV: The Voyage Home"))
+             [ Block
+                 mempty
+                 Nothing
+                 (Paragraph
+                    [ Inline mempty (Str "Everybody remember where we parked.") ])
+             ])
+      ]
+  }

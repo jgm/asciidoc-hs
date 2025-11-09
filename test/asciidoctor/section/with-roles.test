@@ -1,0 +1,13 @@
+[.center.red]
+== Section Title
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "role" , "center red" ) ] )
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section Title") ] [])
+      ]
+  }

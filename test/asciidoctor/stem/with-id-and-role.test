@@ -1,0 +1,22 @@
+:stem:
+[stem, id="sqrt", role="right"]
+++++
+sqrt(4) = 2
+++++
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "stem" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "sqrt" ) , ( "role" , "right" ) ] )
+          Nothing
+          (MathBlock Nothing "sqrt(4) = 2\n")
+      ]
+  }

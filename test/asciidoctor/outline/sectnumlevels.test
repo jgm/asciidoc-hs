@@ -1,0 +1,53 @@
+= Document Title
+:toc:
+:toclevels: 3
+:numbered:
+:sectnumlevels: 1
+
+== Section 1
+
+=== Section 1.1
+
+==== Section 1.1.1
+
+== Section 2
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList
+              [ ( "numbered" , "" )
+              , ( "sectnumlevels" , "1" )
+              , ( "toc" , "" )
+              , ( "toclevels" , "3" )
+              ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Section 1") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (Section
+                    (Level 2)
+                    [ Inline mempty (Str "Section 1.1") ]
+                    [ Block
+                        mempty
+                        Nothing
+                        (Section (Level 3) [ Inline mempty (Str "Section 1.1.1") ] [])
+                    ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section 2") ] [])
+      ]
+  }

@@ -1,0 +1,16 @@
+Rubies are red, +
+Topazes are blue.
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Rubies are red, ")
+             , Inline mempty HardBreak
+             , Inline mempty (Str "Topazes are blue.")
+             ])
+      ]
+  }

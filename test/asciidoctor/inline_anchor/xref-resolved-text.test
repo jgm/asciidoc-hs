@@ -1,0 +1,21 @@
+Refer to <<Section A>>.
+
+== Section A
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Refer to ")
+             , Inline mempty (CrossReference "Section A" Nothing)
+             , Inline mempty (Str ".")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Section A") ] [])
+      ]
+  }

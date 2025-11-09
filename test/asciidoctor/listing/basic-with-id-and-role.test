@@ -1,0 +1,22 @@
+[#code.example]
+----
+echo -n "Please enter your name: "
+read name
+echo "Hello, $name!"
+----
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "code" ) , ( "role" , "example" ) ] )
+          Nothing
+          (Listing
+             Nothing
+             [ SourceLine "echo -n \"Please enter your name: \"" Nothing
+             , SourceLine "read name" Nothing
+             , SourceLine "echo \"Hello, $name!\"" Nothing
+             ])
+      ]
+  }

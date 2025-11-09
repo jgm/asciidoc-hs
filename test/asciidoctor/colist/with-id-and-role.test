@@ -1,0 +1,55 @@
+// This example should assert only callouts list below the code listing.
+// For callouts inside the listing is responsible inline_callout.
+[source, ruby]
+----
+require 'sinatra' // <1>
+
+get '/hi' do  # <2>
+  "Hello World!" ;; <3>
+end
+----
+[#call.sinatra]
+<1> Library import
+<2> URL mapping
+<3> Content for response
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing
+             (Just (Language "ruby"))
+             [ SourceLine "require 'sinatra' //" (Just (Callout 1))
+             , SourceLine "" Nothing
+             , SourceLine "get '/hi' do  #" (Just (Callout 2))
+             , SourceLine "  \"Hello World!\" ;;" (Just (Callout 3))
+             , SourceLine "end" Nothing
+             ])
+      , Block
+          Attr
+          ( [] , fromList [ ( "id" , "call" ) , ( "role" , "sinatra" ) ] )
+          Nothing
+          (List
+             CalloutList
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "Library import") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "URL mapping") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "Content for response") ])
+                 ]
+             ])
+      ]
+  }

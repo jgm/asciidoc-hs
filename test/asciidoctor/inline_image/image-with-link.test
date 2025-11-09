@@ -1,0 +1,19 @@
+image:linux.svg[link="http://inkscape.org/doc/examples/tux.svg"]
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( []
+                 , fromList
+                     [ ( "link" , "http://inkscape.org/doc/examples/tux.svg" ) ]
+                 )
+                 (InlineImage (Target "linux.svg") Nothing Nothing Nothing)
+             ])
+      ]
+  }

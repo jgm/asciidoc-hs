@@ -1,0 +1,16 @@
+[why]_chunky bacon_
+>>>
+Document
+  { docMeta = Meta [] [] Nothing mempty
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "why" ) ] )
+                 (Italic [ Inline mempty (Str "chunky bacon") ])
+             ])
+      ]
+  }
