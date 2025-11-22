@@ -46,6 +46,7 @@ import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
+import Data.Aeson (ToJSON(..), FromJSON(..), genericToEncoding, defaultOptions)
 
 -- | A complete AsciiDoc document
 data Document = Document
@@ -53,11 +54,19 @@ data Document = Document
   , docBlocks :: [Block]
   } deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON Document where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Document
+
 -- | Author information
 data Author = Author
   { authorName :: Text
   , authorEmail :: Maybe Text
   } deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON Author where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Author
 
 -- | Revision information
 data Revision = Revision
@@ -65,6 +74,10 @@ data Revision = Revision
   , revDate :: Maybe Text
   , revRemark :: Maybe Text
   } deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON Revision where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Revision
 
 -- | Document metadata
 data Meta = Meta
@@ -82,6 +95,10 @@ instance Show Meta where
     ", docRevision = " <> show revision <>
     ", docAttributes = " <> show attributes
     <> "}"
+
+instance ToJSON Meta where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Meta
 
 -- | Attributes attached to an element.
 -- The first parameter stores positional attributes in order.
@@ -110,6 +127,10 @@ instance Monoid Attr where
   mempty = Attr [] Map.empty
   mappend = (<>)
 
+instance ToJSON Attr where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Attr
+
 attrNull :: Attr -> Bool
 attrNull (Attr pos m) = null pos && Map.null m
 
@@ -117,46 +138,90 @@ attrNull (Attr pos m) = null pos && Map.null m
 newtype Level = Level Int
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON Level where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Level
+
 -- | Programming or markup language identifier
 newtype Language = Language Text
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
+
+instance ToJSON Language where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Language
 
 -- | Attribution for quotes
 newtype Attribution = Attribution Text
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON Attribution where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Attribution
+
 -- | Alternative text for images
 newtype AltText = AltText Text
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
+
+instance ToJSON AltText where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON AltText
 
 -- | Width specification in pixels
 newtype Width = Width Int
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON Width where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Width
+
 -- | Height specification in pixels
 newtype Height = Height Int
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
+
+instance ToJSON Height where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Height
 
 -- | Footnote identifier
 newtype FootnoteId = FootnoteId Text
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON FootnoteId where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON FootnoteId
+
 -- | Attribute name
 newtype AttributeName = AttributeName Text
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON AttributeName where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON AttributeName
+
 -- | Source line callout
 newtype Callout = Callout Int
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
+
+instance ToJSON Callout where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Callout
 
 -- | Source line with possible annotation
 data SourceLine =
     SourceLine Text (Maybe Callout)
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
+instance ToJSON SourceLine where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON SourceLine
+
 -- | Block-level element with attributes
 data Block = Block Attr (Maybe BlockTitle) BlockType
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON Block where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Block
 
 -- | Block-level element types
 data BlockType
@@ -187,8 +252,16 @@ data BlockType
   | Include FilePath (Maybe [Block])
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON BlockType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON BlockType
+
 newtype BlockTitle = BlockTitle [Inline]
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON BlockTitle where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON BlockTitle
 
 -- | Types of admonitions
 data AdmonitionType
@@ -199,6 +272,10 @@ data AdmonitionType
   | Warning
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON AdmonitionType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON AdmonitionType
+
 -- | List types
 data ListType
   = BulletList Level
@@ -207,15 +284,27 @@ data ListType
   | CalloutList
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON ListType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ListType
+
 -- | A list item
 data ListItem = ListItem (Maybe CheckboxState) [Block]
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON ListItem where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ListItem
 
 -- | Checkbox state for checklists
 data CheckboxState
   = Checked
   | Unchecked
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON CheckboxState where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON CheckboxState
 
 -- | Column specification
 data ColumnSpec = ColumnSpec
@@ -224,6 +313,10 @@ data ColumnSpec = ColumnSpec
   , colWidth :: Maybe Int
   , colStyle :: Maybe CellStyle
   } deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON ColumnSpec where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ColumnSpec
 
 -- | Defines how cell contents are parsed
 data CellStyle =
@@ -236,9 +329,17 @@ data CellStyle =
   | StrongStyle
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON CellStyle where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON CellStyle
+
 -- | Table row
 newtype TableRow = TableRow [TableCell]
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON TableRow where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON TableRow
 
 -- | Table cell
 data TableCell = TableCell
@@ -249,6 +350,10 @@ data TableCell = TableCell
   , cellRowspan :: Int
   } deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON TableCell where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON TableCell
+
 -- | Cell alignment
 data HorizAlign
   = AlignLeft
@@ -256,15 +361,27 @@ data HorizAlign
   | AlignRight
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON HorizAlign where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON HorizAlign
+
 data VertAlign
   = AlignTop
   | AlignMiddle
   | AlignBottom
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON VertAlign where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON VertAlign
+
 -- | Inline element with attributes
 data Inline = Inline Attr InlineType
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON Inline where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Inline
 
 -- | Inline element types
 data InlineType
@@ -295,10 +412,18 @@ data InlineType
   | Passthrough Text
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON InlineType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON InlineType
+
 data MathType
   = AsciiMath
   | LaTeXMath
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON MathType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON MathType
 
 -- | Link types
 data LinkType
@@ -306,6 +431,14 @@ data LinkType
   | EmailLink
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance ToJSON LinkType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON LinkType
+
 -- | Link or image target
 newtype Target = Target Text
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON Target where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Target

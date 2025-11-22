@@ -16,6 +16,8 @@ Not (yet) supported:
 ## Instructions
 
 `cabal build` will build the library and an executable called `hasciidoc` that can
-be used for testing.
+be used for testing.  `hasciidoc` will parse an input file and produce either a
+Haskell representation or a JSON representation of the parsed AST. For help,
+`hasciidoc --help`.
 
 `cabal test` will run the tests.
