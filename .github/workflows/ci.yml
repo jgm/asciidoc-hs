@@ -25,15 +25,35 @@ jobs:
           - ghc: '9.10'
             cabal: 'latest'
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v6
+
     - name: Install cabal/ghc
       run: |
         ghcup install ghc --set ${{ matrix.versions.ghc }}
         ghcup install cabal --set ${{ matrix.versions.cabal }}
-    - name: Update cabal database
+
+    - name: Cache cabal global package db
+      id:   cabal-global
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cabal
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ secrets.CACHE_VERSION }}
+
+    - name: Cache cabal work
+      id:   cabal-local
+      uses: actions/cache@v4
+      with:
+        path: |
+          dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local-${{ secrets.CACHE_VERSION }}
+
+     - name: Update cabal database
       run: |
           cabal update
+
     - name: Build and test
       run: |
           cabal build --enable-tests -fexecutable all
           cabal test all
+
