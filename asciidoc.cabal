@@ -25,7 +25,7 @@ library
                     , AsciiDoc.Parse
     -- other-modules:
     -- other-extensions:
-    build-depends:    base >=4.15 && <5
+    build-depends:    base >=4.14 && <5
                     , text
                     , mtl
                     , attoparsec
@@ -40,7 +40,7 @@ executable hasciidoc
     -- other-modules:
     -- other-extensions:
     build-depends:
-        base >=4.15 && <5,
+        base >=4.14 && <5,
         asciidoc,
         mtl,
         text,
@@ -57,7 +57,7 @@ test-suite asciidoc-hs-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base >=4.15 && <5,
+        base >=4.14 && <5,
         asciidoc,
         tasty,
         tasty-hunit,
