@@ -19,28 +19,38 @@ Document
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes =
-            fromList [ ( "numbered" , "" ) , ( "sectnumlevels" , "1" ) ]
+            fromList
+              [ ( "numbered" , "" )
+              , ( "sectids" , "" )
+              , ( "sectnumlevels" , "1" )
+              ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_introduction_to_asciidoctor" ) ] )
           Nothing
           (Section
              (Level 1) [ Inline mempty (Str "Introduction to Asciidoctor") ] [])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_quick_starts" ) ] )
           Nothing
           (Section
              (Level 1)
              [ Inline mempty (Str "Quick Starts") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_usage" ) ] )
                  Nothing
                  (Section
                     (Level 2)
                     [ Inline mempty (Str "Usage") ]
                     [ Block
-                        mempty
+                        Attr
+                        ( []
+                        , fromList [ ( "id" , "_using_the_command_line_interface" ) ]
+                        )
                         Nothing
                         (Section
                            (Level 3)
@@ -48,12 +58,14 @@ Document
                            [])
                     ])
              , Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_syntax" ) ] )
                  Nothing
                  (Section (Level 2) [ Inline mempty (Str "Syntax") ] [])
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_terms_and_concepts" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Terms and Concepts") ] [])
       ]

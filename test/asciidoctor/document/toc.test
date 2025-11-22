@@ -9,11 +9,12 @@ Document
         { docTitle = [ Inline mempty (Str "Document Title") ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "toc" , "" ) ]
+        , docAttributes = fromList [ ( "sectids" , "" ) , ( "toc" , "" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_cavern_glow" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Cavern Glow") ] [])
       ]

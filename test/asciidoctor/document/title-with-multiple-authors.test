@@ -19,7 +19,7 @@ Document
                 }
             ]
         , docRevision = Nothing
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

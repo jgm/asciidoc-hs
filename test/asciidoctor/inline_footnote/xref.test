@@ -2,7 +2,13 @@ A bold statement.footnoteref:[disclaimer,Opinions are my own.]
 Another outrageous statement.footnoteref:[disclaimer]
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty

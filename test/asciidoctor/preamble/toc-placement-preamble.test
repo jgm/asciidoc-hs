@@ -16,7 +16,8 @@ Document
             ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "toc" , "preamble" ) ]
+        , docAttributes =
+            fromList [ ( "sectids" , "" ) , ( "toc" , "preamble" ) ]
         }
   , docBlocks =
       [ Block
@@ -29,7 +30,8 @@ Document
                     "This journey begins on a bleary Monday morning.\nOur intrepid team is in desperate need of double shot mochas, but the milk expired eight days ago.")
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_cavern_glow" ) ] )
           Nothing
           (Section
              (Level 1)

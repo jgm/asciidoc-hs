@@ -1,7 +1,13 @@
 video::video_file.mp4[id="lindsey", role="watch"]
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           Attr

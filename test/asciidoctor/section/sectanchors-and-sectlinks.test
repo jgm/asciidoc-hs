@@ -9,11 +9,16 @@ Document
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes =
-            fromList [ ( "sectanchors" , "" ) , ( "sectlinks" , "" ) ]
+            fromList
+              [ ( "sectanchors" , "" )
+              , ( "sectids" , "" )
+              , ( "sectlinks" , "" )
+              ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_linked_title_with_anchor" ) ] )
           Nothing
           (Section
              (Level 1) [ Inline mempty (Str "Linked title with anchor") ] [])

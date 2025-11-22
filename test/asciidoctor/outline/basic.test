@@ -17,33 +17,38 @@ Document
         { docTitle = [ Inline mempty (Str "Document Title") ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "toc" , "" ) ]
+        , docAttributes = fromList [ ( "sectids" , "" ) , ( "toc" , "" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_1" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section 1") ] [])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_2" ) ] )
           Nothing
           (Section
              (Level 1)
              [ Inline mempty (Str "Section 2") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_section_2_1" ) ] )
                  Nothing
                  (Section
                     (Level 2)
                     [ Inline mempty (Str "Section 2.1") ]
                     [ Block
-                        mempty
+                        Attr
+                        ( [] , fromList [ ( "id" , "_section_2_1_1" ) ] )
                         Nothing
                         (Section (Level 3) [ Inline mempty (Str "Section 2.1.1") ] [])
                     ])
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_3" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section 3") ] [])
       ]

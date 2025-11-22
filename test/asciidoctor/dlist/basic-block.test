@@ -9,7 +9,13 @@ from many other individuals in Asciidoctor’s awesome community.
 AsciiDoc was started by Stuart Rackham.
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty

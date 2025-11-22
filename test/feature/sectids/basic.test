@@ -1,0 +1,61 @@
+= Title
+
+== Foo
+
+[#foobar]
+== Foo
+
+=== Foo
+
+==== Foobar
+
+== Hello *there*, section!
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "_foo" ) ] )
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "Foo") ] [])
+      , Block
+          Attr
+          ( [] , fromList [ ( "id" , "foobar" ) ] )
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Foo") ]
+             [ Block
+                 Attr
+                 ( [] , fromList [ ( "id" , "_foo_2" ) ] )
+                 Nothing
+                 (Section
+                    (Level 2)
+                    [ Inline mempty (Str "Foo") ]
+                    [ Block
+                        Attr
+                        ( [] , fromList [ ( "id" , "_foobar" ) ] )
+                        Nothing
+                        (Section (Level 3) [ Inline mempty (Str "Foobar") ] [])
+                    ])
+             ])
+      , Block
+          Attr
+          ( [] , fromList [ ( "id" , "_hello_there,_section!" ) ] )
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Hello ")
+             , Inline mempty (Bold [ Inline mempty (Str "there") ])
+             , Inline mempty (Str ", section!")
+             ]
+             [])
+      ]
+  }

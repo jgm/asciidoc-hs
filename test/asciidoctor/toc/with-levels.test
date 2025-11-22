@@ -15,11 +15,13 @@ Document
         { docTitle = [ Inline mempty (Str "Document Title") ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "toc" , "macro" ) ]
+        , docAttributes =
+            fromList [ ( "sectids" , "" ) , ( "toc" , "macro" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_introduction" ) ] )
           Nothing
           (Section
              (Level 1)
@@ -27,13 +29,15 @@ Document
              [ Block Attr ( [] , fromList [ ( "levels" , "1" ) ] ) Nothing TOC
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_the_ravages_of_writing" ) ] )
           Nothing
           (Section
              (Level 1)
              [ Inline mempty (Str "The Ravages of Writing") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_a_recipe_for_potion" ) ] )
                  Nothing
                  (Section
                     (Level 2) [ Inline mempty (Str "A Recipe for Potion") ] [])

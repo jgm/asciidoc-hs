@@ -10,7 +10,7 @@ Document
         , docAuthors =
             [ Author { authorName = "" , authorEmail = Nothing } ]
         , docRevision = Nothing
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

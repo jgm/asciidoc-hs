@@ -5,7 +5,13 @@ A paragraph is just one or more lines of consecutive text.
 To begin a new paragraph, separate it by at least one blank line.
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty

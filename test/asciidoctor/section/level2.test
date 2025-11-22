@@ -1,10 +1,17 @@
 === Section Level 2
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_level_2" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section Level 2") ] [])
       ]

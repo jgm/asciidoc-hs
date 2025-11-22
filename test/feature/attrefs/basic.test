@@ -9,7 +9,8 @@ Document
         { docTitle = [ Inline mempty (Str "Title") ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "foo" , "333" ) ]
+        , docAttributes =
+            fromList [ ( "foo" , "333" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block

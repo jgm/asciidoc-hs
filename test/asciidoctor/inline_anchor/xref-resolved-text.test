@@ -3,7 +3,13 @@ Refer to <<Section A>>.
 == Section A
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty
@@ -14,7 +20,8 @@ Document
              , Inline mempty (Str ".")
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_a" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section A") ] [])
       ]

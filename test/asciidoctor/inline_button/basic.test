@@ -7,7 +7,8 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "experimental" , "" ) ]
+        , docAttributes =
+            fromList [ ( "experimental" , "" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block mempty Nothing (Paragraph [ Inline mempty (Button "OK") ])

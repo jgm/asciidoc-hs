@@ -7,7 +7,8 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "icons" , "" ) ]
+        , docAttributes =
+            fromList [ ( "icons" , "" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block

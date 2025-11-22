@@ -12,17 +12,20 @@ Document
         { docTitle = [ Inline mempty (Str "Document Title") ]
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "doctype" , "book" ) ]
+        , docAttributes =
+            fromList [ ( "doctype" , "book" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_part_title" ) ] )
           Nothing
           (Section
              (Level 0)
              [ Inline mempty (Str "Part Title") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_section_level_1" ) ] )
                  Nothing
                  (Section (Level 1) [ Inline mempty (Str "Section Level 1") ] [])
              ])

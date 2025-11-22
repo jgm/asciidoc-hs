@@ -3,7 +3,13 @@ gem install foobar
 gem --version
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty Nothing (LiteralBlock "gem install foobar\ngem --version\n")

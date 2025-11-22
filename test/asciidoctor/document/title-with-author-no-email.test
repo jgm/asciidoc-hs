@@ -13,7 +13,7 @@ Document
                 { authorName = "Kismet Rainbow Chameleon" , authorEmail = Nothing }
             ]
         , docRevision = Nothing
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

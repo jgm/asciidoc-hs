@@ -15,7 +15,8 @@ Document
         , docRevision = Nothing
         , docAttributes =
             fromList
-              [ ( "section-refsig" , "Sec." )
+              [ ( "sectids" , "" )
+              , ( "section-refsig" , "Sec." )
               , ( "sectnums" , "" )
               , ( "xrefstyle" , "short" )
               ]
@@ -34,7 +35,8 @@ Document
           Nothing
           (Paragraph [ Inline mempty (InlineAnchor "install" []) ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_installation" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Installation") ] [])
       ]

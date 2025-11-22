@@ -10,7 +10,8 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "stem" , "asciimath" ) ]
+        , docAttributes =
+            fromList [ ( "sectids" , "" ) , ( "stem" , "asciimath" ) ]
         }
   , docBlocks =
       [ Block mempty Nothing (MathBlock Nothing "sqrt(4) = 2\n") ]

@@ -14,7 +14,7 @@ Document
             Just
               Revision
                 { revVersion = "1.0" , revDate = Nothing , revRemark = Nothing }
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

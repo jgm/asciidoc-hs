@@ -2,11 +2,20 @@
 == Section Title
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           Attr
-          ( [] , fromList [ ( "role" , "center red" ) ] )
+          ( []
+          , fromList
+              [ ( "id" , "_section_title" ) , ( "role" , "center red" ) ]
+          )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section Title") ] [])
       ]

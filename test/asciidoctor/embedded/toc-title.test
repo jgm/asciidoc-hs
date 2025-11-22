@@ -12,11 +12,15 @@ Document
         , docRevision = Nothing
         , docAttributes =
             fromList
-              [ ( "toc" , "" ) , ( "toc-title" , "Table of Adventures" ) ]
+              [ ( "sectids" , "" )
+              , ( "toc" , "" )
+              , ( "toc-title" , "Table of Adventures" )
+              ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_cavern_glow" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Cavern Glow") ] [])
       ]

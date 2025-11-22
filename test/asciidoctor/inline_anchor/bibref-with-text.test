@@ -4,7 +4,13 @@
 * [[[prag, 1]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           Attr

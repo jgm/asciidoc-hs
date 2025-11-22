@@ -10,7 +10,8 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "stem" , "latexmath" ) ]
+        , docAttributes =
+            fromList [ ( "sectids" , "" ) , ( "stem" , "latexmath" ) ]
         }
   , docBlocks =
       [ Block

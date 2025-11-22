@@ -17,29 +17,34 @@ Document
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes =
-            fromList [ ( "toc" , "" ) , ( "toclevels" , "1" ) ]
+            fromList
+              [ ( "sectids" , "" ) , ( "toc" , "" ) , ( "toclevels" , "1" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_1" ) ] )
           Nothing
           (Section
              (Level 1)
              [ Inline mempty (Str "Section 1") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_section_1_1" ) ] )
                  Nothing
                  (Section
                     (Level 2)
                     [ Inline mempty (Str "Section 1.1") ]
                     [ Block
-                        mempty
+                        Attr
+                        ( [] , fromList [ ( "id" , "_section_1_1_1" ) ] )
                         Nothing
                         (Section (Level 3) [ Inline mempty (Str "Section 1.1.1") ] [])
                     ])
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_section_2" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Section 2") ] [])
       ]

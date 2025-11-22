@@ -17,7 +17,7 @@ Document
                 , revDate = Just "October 2, 2013"
                 , revRemark = Just "First incarnation"
                 }
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

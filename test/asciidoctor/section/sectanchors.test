@@ -7,11 +7,13 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "sectanchors" , "" ) ]
+        , docAttributes =
+            fromList [ ( "sectanchors" , "" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_title_with_anchor" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Title with anchor") ] [])
       ]

@@ -21,6 +21,7 @@ import Data.List (foldl', intersperse)
 import qualified Data.Attoparsec.Text as A
 import Control.Applicative
 import Control.Monad
+import Control.Monad.State
 import Control.Monad.Error.Class
 import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit)
 import AsciiDoc.AST
@@ -31,9 +32,8 @@ import AsciiDoc.Generic
 parseDocument :: MonadError ParseError m
               => (FilePath -> m Text) -> Text -> m Document
 parseDocument getFileContents t =
-   go (A.parse pDocument t)
-     >>= handleIncludes
-     >>= resolveAttributeReferences
+   go (A.parse pDocument t) >>= handleIncludes
+     >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
   go (A.Fail i _ msg) = throwError (ParseError (T.length t - T.length i) msg)
@@ -114,7 +114,8 @@ pDocumentHeader = do
                  else optional pDocumentRevision
   let handleAttr m (Left k) = M.delete k m
       handleAttr m (Right (k,v)) = M.insert k v m
-  attrs <- foldl' handleAttr mempty <$> many pDocAttribute
+  let defaultDocAttrs = M.insert "sectids" "" $ mempty
+  attrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
   -- TODO add authors from attributes
   -- = The Intrepid Chronicles
   -- :author: Kismet R. Lee
@@ -1457,12 +1458,35 @@ readDecimal t =
 notFollowedBy :: P a -> P ()
 notFollowedBy p = optional p >>= guard . isNothing
 
+-- Generate auto-identifiers for sections.
+
+addIdentifiers :: Document -> Document
+addIdentifiers doc =
+  case M.lookup "sectids" docattr of
+    Just _ -> evalState (mapBlocks (addIdentifier prefix idsep) doc) mempty
+    Nothing -> doc
+ where
+  docattr = docAttributes (docMeta doc)
+  prefix = fromMaybe "_" $ M.lookup "idprefix" docattr
+  idsep = fromMaybe "_" $ M.lookup "idseparator" docattr
+
+addIdentifier :: Text -> Text -> Block -> State (M.Map Text Int) Block
+addIdentifier prefix idsep (Block (Attr ps kvs) mbtitle (Section lev ils bs))
+  | Nothing <- M.lookup "id" kvs
+  = do
+      usedIds <- get
+      let (ident, usedIds') = generateIdentifier prefix idsep usedIds ils
+      put usedIds'
+      pure $ Block (Attr ps (M.insert "id" ident kvs)) mbtitle
+                     (Section lev ils bs)
+addIdentifier _ _ x = pure x
+
 generateIdentifier :: Text -> Text -> M.Map Text Int -> [Inline]
                    -> (Text, M.Map Text Int)
 generateIdentifier prefix idsep usedIds ils =
   case M.lookup s usedIds of
     Nothing -> (s, M.insert s 1 usedIds)
-    Just n -> (s <> T.pack (show (n + 1)), M.insert s (n + 1) usedIds)
+    Just n -> (s <> idsep <> T.pack (show (n + 1)), M.insert s (n + 1) usedIds)
  where
   s = prefix <> makeSeps (T.toLower (toString ils))
   makeSeps = T.intercalate idsep . T.words .

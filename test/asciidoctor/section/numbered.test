@@ -19,46 +19,56 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "numbered" , "" ) ]
+        , docAttributes =
+            fromList [ ( "numbered" , "" ) , ( "sectids" , "" ) ]
         }
   , docBlocks =
       [ Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_introduction_to_asciidoctor" ) ] )
           Nothing
           (Section
              (Level 1) [ Inline mempty (Str "Introduction to Asciidoctor") ] [])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_quick_starts" ) ] )
           Nothing
           (Section
              (Level 1)
              [ Inline mempty (Str "Quick Starts") ]
              [ Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_usage" ) ] )
                  Nothing
                  (Section
                     (Level 2)
                     [ Inline mempty (Str "Usage") ]
                     [ Block
-                        mempty
+                        Attr
+                        ( []
+                        , fromList [ ( "id" , "_using_the_command_line_interface" ) ]
+                        )
                         Nothing
                         (Section
                            (Level 3)
                            [ Inline mempty (Str "Using the Command Line Interface") ]
                            [ Block
-                               mempty
+                               Attr
+                               ( [] , fromList [ ( "id" , "_processing_your_content" ) ] )
                                Nothing
                                (Section
                                   (Level 4) [ Inline mempty (Str "Processing Your Content") ] [])
                            ])
                     ])
              , Block
-                 mempty
+                 Attr
+                 ( [] , fromList [ ( "id" , "_syntax" ) ] )
                  Nothing
                  (Section (Level 2) [ Inline mempty (Str "Syntax") ] [])
              ])
       , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "_terms_and_concepts" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Terms and Concepts") ] [])
       ]

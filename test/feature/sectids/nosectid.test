@@ -1,0 +1,20 @@
+= Title
+:!sectids:
+
+== My section
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Title") ]
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList []
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Section (Level 1) [ Inline mempty (Str "My section") ] [])
+      ]
+  }

@@ -17,7 +17,7 @@ Document
                 , revDate = Just "2013-10-02"
                 , revRemark = Nothing
                 }
-        , docAttributes = fromList []
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks = []
   }

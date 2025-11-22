@@ -11,7 +11,7 @@ Document
         { docTitle = []
         , docAuthors = []
         , docRevision = Nothing
-        , docAttributes = fromList [ ( "stem" , "" ) ]
+        , docAttributes = fromList [ ( "sectids" , "" ) , ( "stem" , "" ) ]
         }
   , docBlocks =
       [ Block

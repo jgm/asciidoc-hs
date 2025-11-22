@@ -1,7 +1,13 @@
 video::video_file.mp4[]
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block mempty Nothing (BlockVideo (Target "video_file.mp4")) ]
   }

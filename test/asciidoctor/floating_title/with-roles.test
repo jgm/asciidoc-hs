@@ -2,11 +2,19 @@
 === Discrete Title Level 2
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           Attr
-          ( [ "discrete.flying.circus" ] , fromList [] )
+          ( [ "discrete.flying.circus" ]
+          , fromList [ ( "id" , "_discrete_title_level_2" ) ]
+          )
           Nothing
           (Section
              (Level 1) [ Inline mempty (Str "Discrete Title Level 2") ] [])

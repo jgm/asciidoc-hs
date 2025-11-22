@@ -7,7 +7,13 @@ Dennis: Oh, what a giveaway! Did you hear that? Did you hear that, eh? That's wh
 ____
 >>>
 Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
   , docBlocks =
       [ Block
           mempty
