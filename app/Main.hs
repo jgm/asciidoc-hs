@@ -8,9 +8,8 @@ import qualified Data.Text.IO as TIO
 import System.Exit (exitFailure)
 import Text.Show.Pretty (ppShow)
 import AsciiDoc.Parse (parseDocument)
-import Control.Monad.Except
-import Control.Monad.Trans (lift)
 import qualified Data.ByteString.Lazy as B
+import System.IO (hPutStrLn, stderr)
 
 data OutputFormat
   = AST    -- ^ Show the parsed AST in Haskell notation
@@ -63,15 +62,14 @@ main = do
     [] -> TIO.getContents
     fs -> mconcat <$> mapM TIO.readFile fs
 
+  let raiseError pos msg = do
+        hPutStrLn stderr $ "Parse error at position " <> show pos <> ": " <> msg
+        exitFailure
+
   -- Parse the document
-  res <- runExceptT $ parseDocument (lift . TIO.readFile) input
-  case res of
-    Left err -> do
-      putStrLn $ "Parse error: " ++ show err
-      exitFailure
-    Right doc ->
-      case optOutputFormat options of
-        AST -> putStrLn $ ppShow doc
-        JSON -> do
-          B.putStr $ encode doc
-          B.putStr "\n"
+  doc <- parseDocument TIO.readFile raiseError input
+  case optOutputFormat options of
+    AST -> putStrLn $ ppShow doc
+    JSON -> do
+      B.putStr $ encode doc
+      B.putStr "\n"

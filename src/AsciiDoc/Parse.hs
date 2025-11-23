@@ -6,7 +6,6 @@
 
 module AsciiDoc.Parse
   ( parseDocument
-  , ParseError(..)
   ) where
 
 import Text.HTML.TagSoup.Entity (lookupNamedEntity)
@@ -22,40 +21,46 @@ import qualified Data.Attoparsec.Text as A
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
-import Control.Monad.Error.Class
 import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit)
 import AsciiDoc.AST
 import AsciiDoc.Generic
 -- import Debug.Trace
 
 -- | Parse a complete AsciiDoc document
-parseDocument :: MonadError ParseError m
-              => (FilePath -> m Text) -> Text -> m Document
-parseDocument getFileContents t =
+parseDocument :: Monad m
+              => (FilePath -> m Text) -- ^ Get contents of an included file
+              -> (Int -> String -> m Document) -- ^ Raise an error given source pos and message
+              -> Text -- ^ Text to convert
+              -> m Document
+parseDocument getFileContents raiseError t =
    go (A.parse pDocument t) >>= handleIncludes
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
-  go (A.Fail i _ msg) = throwError (ParseError (T.length t - T.length i) msg)
+  go (A.Fail i _ msg) = raiseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
   go (A.Done i r) | T.all isSpace i = pure r
-                | otherwise = throwError
-                                    (ParseError (T.length t - T.length i)
-                                      ("unconsumed text after end of document:" ++
-                                       T.unpack (T.take 20 i)))
+                | otherwise = raiseError (T.length t - T.length i)
+                               ("unexpected: " ++ T.unpack (T.take 20 i))
+
   toAnchorMap d = foldBlocks blockAnchor d <> foldInlines inlineAnchor d
+
   blockAnchor (Block (Attr _ kvs) _ (Section _ ils _))
     | Just ident <- M.lookup "id" kvs = M.singleton ident ils
   blockAnchor _ = mempty
+
   inlineAnchor (Inline _ (InlineAnchor ident ils)) = M.singleton ident ils
   inlineAnchor (Inline _ (BibliographyAnchor ident ils)) = M.singleton ident ils
   inlineAnchor _ = mempty
+
   resolveCrossReferences d = mapInlines (resolveCrossReference (toAnchorMap d)) d
   resolveCrossReference anchorMap (Inline attr (CrossReference ident Nothing))
     | Just ils <- M.lookup ident anchorMap
       = pure $ Inline attr (CrossReference ident (Just ils))
   resolveCrossReference _ x = pure x
+
   handleIncludes = mapBlocks handleIncludeBlock
+
   handleIncludeBlock (Block attr mbtitle (Include fp Nothing)) = do
      contents <- getFileContents fp
      Block attr mbtitle . Include fp . Just . docBlocks <$>
@@ -65,19 +70,15 @@ parseDocument getFileContents t =
      pure $ Block attr mbtitle $ IncludeListing mblang fp
           $ Just (map (\ln -> SourceLine ln Nothing) (T.lines contents))
   handleIncludeBlock x = pure x
+
   resolveAttributeReferences doc =
     mapInlines (goAttref (docAttributes (docMeta doc))) doc
+
   goAttref atts il@(Inline attr (AttributeReference (AttributeName at))) =
      case M.lookup at atts of
        Nothing -> return il
        Just x -> return $ Inline attr (Str x)
   goAttref _ il = return il
-
-data ParseError =
-  ParseError
-  { errorLocation :: Int
-  , errorMessage :: String
-  } deriving (Show)
 
 type P = A.Parser
 
@@ -104,6 +105,11 @@ pDocument = do
 
 pDocumentHeader :: P Meta
 pDocumentHeader = do
+  let handleAttr m (Left k) = M.delete k m
+      handleAttr m (Right (k,v)) = M.insert k v m
+  let defaultDocAttrs = M.insert "sectids" "" $ mempty
+  A.skipMany pLineComment
+  topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
   A.skipMany pLineComment
   title <- A.option [] pDocumentTitle
   authors <- if null title
@@ -112,10 +118,7 @@ pDocumentHeader = do
   revision <- if null title
                  then pure Nothing
                  else optional pDocumentRevision
-  let handleAttr m (Left k) = M.delete k m
-      handleAttr m (Right (k,v)) = M.insert k v m
-  let defaultDocAttrs = M.insert "sectids" "" $ mempty
-  attrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
+  attrs <- foldl' handleAttr topattrs <$> many pDocAttribute
   -- TODO add authors from attributes
   -- = The Intrepid Chronicles
   -- :author: Kismet R. Lee
@@ -480,12 +483,15 @@ pTableCellPSV mbsep allowNewlines colspecs = do
                 ([],colspecs)
                 rawcells
 
+
 parseCellContents :: CellStyle -> T.Text -> P [Block]
 parseCellContents sty t =
   case sty of
     AsciiDocStyle ->
       either (fail . show) (pure . docBlocks)
-       (parseDocument (\_ -> pure mempty) (t <> "\n"))
+       (parseDocument (\_ -> pure mempty)
+       (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
+        (t <> "\n"))
     DefaultStyle -> parseBlocks (t <> "\n")
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
     EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks (t <> "\n")

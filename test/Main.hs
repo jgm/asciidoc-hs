@@ -63,12 +63,13 @@ toGoldenTest fp =
     constructGoldenTest (inText, result)
 
   getFakeFile "foo.adoc" = Right ". one\n.. two\n"
-  getFakeFile fp' = Left $ ParseError 0 $ fp' <> " not found"
+  getFakeFile fp' = raiseError (0 :: Int) (fp' <> " not found")
 
-  convert inText = do
-    case parseDocument getFakeFile inText of
-      Left err -> return $ T.pack $ show err
-      Right result -> return $ T.pack . ppShow $ result
+  raiseError pos msg = Left $ "Parse error at position " <> show pos <> ": " <> msg
+
+  convert inText = case parseDocument getFakeFile raiseError inText of
+                     Left e -> fail e
+                     Right doc -> pure $ T.pack . ppShow $ doc
 
   readGoldenTest :: FilePath -> IO (T.Text, T.Text)
   readGoldenTest fp' = do

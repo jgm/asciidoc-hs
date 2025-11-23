@@ -1,4 +1,18 @@
 :showtitle:
 = The Dangerous and Thrilling Documentation Chronicles
 >>>
-ParseError {errorLocation = 12, errorMessage = "unconsumed text after end of document:= The Dangerous and "}
+Document
+  { docMeta =
+      Meta
+        { docTitle =
+            [ Inline
+                mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
+            ]
+        , docAuthors =
+            [ Author { authorName = "" , authorEmail = Nothing } ]
+        , docRevision = Nothing
+        , docAttributes =
+            fromList [ ( "sectids" , "" ) , ( "showtitle" , "" ) ]
+        }
+  , docBlocks = []
+  }
