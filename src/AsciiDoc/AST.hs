@@ -246,7 +246,6 @@ data BlockType
   | BlockVideo Target
   | TOC
   | Admonition AdmonitionType [Block]
-  | HorizRule
   | PageBreak
   | ThematicBreak
   | Include FilePath (Maybe [Block])
