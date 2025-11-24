@@ -1122,7 +1122,7 @@ pInline prevChars = do
         _ -> mzero)
      <|> (do c <- A.peekChar'
              case c of
-               '`' -> pApostrophe '`'
+               '\'' -> pApostrophe '\''
                '+' -> pHardBreak
                '{' -> pAttributeReference
                '\\' -> pEscape
