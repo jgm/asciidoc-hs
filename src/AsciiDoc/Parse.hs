@@ -221,7 +221,7 @@ pBlankLine = A.takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> A.en
 
 parseBlocks :: Text -> P [Block]
 parseBlocks t =
-  either fail pure $ A.parseOnly (many (pBlock [])) (T.strip t)
+  either fail pure $ A.parseOnly (many (pBlock [])) (T.strip t <> "\n")
 
 parseInlines :: Text -> [Inline]
 parseInlines t = either (const mempty) id $ A.parseOnly pInlines (T.strip t)
@@ -492,12 +492,12 @@ parseCellContents sty t =
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
         (t <> "\n"))
-    DefaultStyle -> parseBlocks (t <> "\n")
+    DefaultStyle -> parseBlocks t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
-    EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks (t <> "\n")
-    StrongStyle -> map (surroundPara Bold) <$> parseBlocks (t <> "\n")
-    MonospaceStyle -> map (surroundPara Monospace) <$> parseBlocks (t <> "\n")
-    HeaderStyle -> parseBlocks (t <> "\n")
+    EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
+    StrongStyle -> map (surroundPara Bold) <$> parseBlocks t
+    MonospaceStyle -> map (surroundPara Monospace) <$> parseBlocks t
+    HeaderStyle -> parseBlocks t
  where
    surroundPara :: ([Inline] -> InlineType) -> Block -> Block
    surroundPara bt (Block attr mbtitle (Paragraph ils)) =
