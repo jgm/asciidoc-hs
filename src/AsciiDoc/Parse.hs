@@ -157,12 +157,12 @@ parseAuthor t =
 pDocumentRevision :: P Revision
 pDocumentRevision = do
   vprefix <- A.option False (True <$ char 'v')
-  version <- A.takeWhile1 (\c -> c /= ',' && not (isSpace c))
-  date <- optional (T.strip <$> (char ',' *> A.space *> A.takeWhile1 (/= ':')))
+  version <- A.takeWhile1 (\c -> not (A.isEndOfLine c) && c /= ',')
+  date <- optional (T.strip <$> (char ',' *> A.space
+               *> A.takeWhile1 (\c -> not (A.isEndOfLine c) && c /= ':')))
   remark <- optional
             (T.strip <$> (char ':' *>  A.space *> A.takeWhile (not . A.isEndOfLine)))
-  t <- pLine
-  guard $ T.null t
+  A.endOfLine
   when (isNothing date && isNothing remark) $ guard vprefix
   pure  Revision { revVersion = version
                  , revDate = date
