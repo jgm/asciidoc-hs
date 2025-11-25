@@ -292,8 +292,10 @@ pTable mbtitle (Attr ps kvs) = do
                  _ -> Nothing
   let tableOpts = TableOpts { tableSyntax = syntax
                             , tableSeparator = mbsep
-                            , tableHeader = "header" `elem` options
-                            , tableFooter = "footer" `elem` options
+                            , tableHeader = "header" `elem` options ||
+                                "noheader" `notElem` options
+                            , tableFooter = "footer" `elem` options ||
+                                "nofooter" `notElem` options
                             }
   let getRows mbspecs rowspans = (([],[]) <$ pTableBorder) <|>
          do -- for this row, we modify the specs based on rowspans

@@ -43,84 +43,87 @@ Document
                  , colStyle = Nothing
                  }
              ]
-             Nothing
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace
+                                          [ Inline
+                                              mempty
+                                              (Str "This content is duplicated across two columns.")
+                                          ])
+                                   ])
+                            , Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace
+                                          [ Inline mempty (Str "It is aligned right horizontally.")
+                                          ])
+                                   ])
+                            , Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace [ Inline mempty (Str "And it is monospaced.") ])
+                                   ])
+                            ]
+                        , cellHorizAlign = Just AlignRight
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace
+                                          [ Inline
+                                              mempty
+                                              (Str "This content is duplicated across two columns.")
+                                          ])
+                                   ])
+                            , Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace
+                                          [ Inline mempty (Str "It is aligned right horizontally.")
+                                          ])
+                                   ])
+                            , Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline
+                                       mempty
+                                       (Monospace [ Inline mempty (Str "And it is monospaced.") ])
+                                   ])
+                            ]
+                        , cellHorizAlign = Just AlignRight
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
              [ TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace
-                                       [ Inline
-                                           mempty
-                                           (Str "This content is duplicated across two columns.")
-                                       ])
-                                ])
-                         , Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace
-                                       [ Inline mempty (Str "It is aligned right horizontally.") ])
-                                ])
-                         , Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace [ Inline mempty (Str "And it is monospaced.") ])
-                                ])
-                         ]
-                     , cellHorizAlign = Just AlignRight
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 , TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace
-                                       [ Inline
-                                           mempty
-                                           (Str "This content is duplicated across two columns.")
-                                       ])
-                                ])
-                         , Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace
-                                       [ Inline mempty (Str "It is aligned right horizontally.") ])
-                                ])
-                         , Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline
-                                    mempty
-                                    (Monospace [ Inline mempty (Str "And it is monospaced.") ])
-                                ])
-                         ]
-                     , cellHorizAlign = Just AlignRight
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
-             , TableRow
                  [ TableCell
                      { cellContent =
                          [ Block
@@ -174,22 +177,24 @@ Document
                      , cellRowspan = 1
                      }
                  ]
-             , TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Listing
-                                Nothing [ SourceLine "puts \"This is a source block!\"" Nothing ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
              ]
-             Nothing)
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Listing
+                                   Nothing
+                                   [ SourceLine "puts \"This is a source block!\"" Nothing ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
       ]
   }

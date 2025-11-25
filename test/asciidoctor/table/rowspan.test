@@ -41,46 +41,47 @@ Document
                  , colStyle = Nothing
                  }
              ]
-             Nothing
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Cell in column 1, row 1") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Cell in column 2, row 1") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Cell in column 3, row 1") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
              [ TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Cell in column 1, row 1") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 , TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Cell in column 2, row 1") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 , TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Cell in column 3, row 1") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
-             , TableRow
                  [ TableCell
                      { cellContent =
                          [ Block
@@ -121,33 +122,34 @@ Document
                      , cellRowspan = 1
                      }
                  ]
-             , TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Cell in column 2, row 3") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 , TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Cell in column 3, row 3") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
              ]
-             Nothing)
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Cell in column 2, row 3") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Cell in column 3, row 3") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
       ]
   }

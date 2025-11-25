@@ -32,28 +32,29 @@ Document
                  , colStyle = Nothing
                  }
              ]
-             Nothing
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline mempty (Str "Prefix the ")
+                                   , Inline mempty (Str "{vbar}")
+                                   , Inline mempty (Str " with ")
+                                   , Inline mempty (Str "{caret}")
+                                   , Inline mempty (Str " to center content horizontally")
+                                   ])
+                            ]
+                        , cellHorizAlign = Just AlignCenter
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
              [ TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline mempty (Str "Prefix the ")
-                                , Inline mempty (Str "{vbar}")
-                                , Inline mempty (Str " with ")
-                                , Inline mempty (Str "{caret}")
-                                , Inline mempty (Str " to center content horizontally")
-                                ])
-                         ]
-                     , cellHorizAlign = Just AlignCenter
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
-             , TableRow
                  [ TableCell
                      { cellContent =
                          [ Block
@@ -164,29 +165,30 @@ Document
                      , cellRowspan = 1
                      }
                  ]
-             , TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph
-                                [ Inline mempty (Str "This content spans three columns (")
-                                , Inline mempty (Str "3{plus}")
-                                , Inline mempty (Str ") and is centered horizontally (")
-                                , Inline mempty (Str "{caret}")
-                                , Inline mempty (Str ") and vertically (")
-                                , Inline mempty (Str ".{caret}")
-                                , Inline mempty (Str ") within the cell.")
-                                ])
-                         ]
-                     , cellHorizAlign = Just AlignCenter
-                     , cellVertAlign = Just AlignMiddle
-                     , cellColspan = 3
-                     , cellRowspan = 1
-                     }
-                 ]
              ]
-             Nothing)
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph
+                                   [ Inline mempty (Str "This content spans three columns (")
+                                   , Inline mempty (Str "3{plus}")
+                                   , Inline mempty (Str ") and is centered horizontally (")
+                                   , Inline mempty (Str "{caret}")
+                                   , Inline mempty (Str ") and vertically (")
+                                   , Inline mempty (Str ".{caret}")
+                                   , Inline mempty (Str ") within the cell.")
+                                   ])
+                            ]
+                        , cellHorizAlign = Just AlignCenter
+                        , cellVertAlign = Just AlignMiddle
+                        , cellColspan = 3
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
       ]
   }

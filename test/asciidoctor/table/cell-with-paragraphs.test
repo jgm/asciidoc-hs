@@ -27,40 +27,42 @@ Document
                  , colStyle = Nothing
                  }
              ]
-             Nothing
-             [ TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Single paragraph on row 1") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
-             , TableRow
-                 [ TableCell
-                     { cellContent =
-                         [ Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "First paragraph on row 2") ])
-                         , Block
-                             mempty
-                             Nothing
-                             (Paragraph [ Inline mempty (Str "Second paragraph on row 2") ])
-                         ]
-                     , cellHorizAlign = Nothing
-                     , cellVertAlign = Nothing
-                     , cellColspan = 1
-                     , cellRowspan = 1
-                     }
-                 ]
-             ]
-             Nothing)
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Single paragraph on row 1") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
+             []
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "First paragraph on row 2") ])
+                            , Block
+                                mempty
+                                Nothing
+                                (Paragraph [ Inline mempty (Str "Second paragraph on row 2") ])
+                            ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
       ]
   }
