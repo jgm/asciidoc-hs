@@ -29,23 +29,22 @@ Document
              (Just (Language "java"))
              [ SourceLine
                  "public class ApplicationConfigurationProvider extends HttpConfigurationProvider {"
-                 Nothing
-             , SourceLine "" Nothing
+                 []
+             , SourceLine "" []
              , SourceLine
                  "   public Configuration getConfiguration(ServletContext context) {"
-                 Nothing
-             , SourceLine "      return ConfigurationBuilder.begin()" Nothing
-             , SourceLine "               .addRule()" Nothing
+                 []
+             , SourceLine "      return ConfigurationBuilder.begin()" []
+             , SourceLine "               .addRule()" []
              , SourceLine
                  "               .when(Direction.isInbound().and(Path.matches(\"/{path}\")))"
-                 Nothing
+                 []
              , SourceLine
                  "               .perform(Log.message(Level.INFO, \"Client requested path: {path}\"))"
-                 Nothing
-             , SourceLine
-                 "               .where(\"path\").matches(\".*\");" Nothing
-             , SourceLine "   }" Nothing
-             , SourceLine "}" Nothing
+                 []
+             , SourceLine "               .where(\"path\").matches(\".*\");" []
+             , SourceLine "   }" []
+             , SourceLine "}" []
              ])
       ]
   }

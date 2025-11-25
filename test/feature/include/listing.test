@@ -18,7 +18,6 @@ Document
           (IncludeListing
              (Just (Language "asciidoc"))
              "foo.adoc"
-             (Just
-                [ SourceLine ". one" Nothing , SourceLine ".. two" Nothing ]))
+             (Just [ SourceLine ". one" [] , SourceLine ".. two" [] ]))
       ]
   }

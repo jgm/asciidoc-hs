@@ -26,11 +26,11 @@ Document
           Nothing
           (Listing
              (Just (Language "ruby"))
-             [ SourceLine "require 'sinatra' //" (Just (Callout 1))
-             , SourceLine "" Nothing
-             , SourceLine "get '/hi' do  #" (Just (Callout 2))
-             , SourceLine "  \"Hello World!\" ;;" (Just (Callout 3))
-             , SourceLine "end" Nothing
+             [ SourceLine "require 'sinatra' //" [ Callout 1 ]
+             , SourceLine "" []
+             , SourceLine "get '/hi' do  #" [ Callout 2 ]
+             , SourceLine "  \"Hello World!\" ;;" [ Callout 3 ]
+             , SourceLine "end" []
              ])
       , Block
           mempty

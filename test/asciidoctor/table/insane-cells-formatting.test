@@ -186,8 +186,7 @@ Document
                                 mempty
                                 Nothing
                                 (Listing
-                                   Nothing
-                                   [ SourceLine "puts \"This is a source block!\"" Nothing ])
+                                   Nothing [ SourceLine "puts \"This is a source block!\"" [] ])
                             ]
                         , cellHorizAlign = Nothing
                         , cellVertAlign = Nothing

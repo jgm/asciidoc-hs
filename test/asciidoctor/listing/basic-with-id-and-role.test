@@ -20,9 +20,9 @@ Document
           Nothing
           (Listing
              Nothing
-             [ SourceLine "echo -n \"Please enter your name: \"" Nothing
-             , SourceLine "read name" Nothing
-             , SourceLine "echo \"Hello, $name!\"" Nothing
+             [ SourceLine "echo -n \"Please enter your name: \"" []
+             , SourceLine "read name" []
+             , SourceLine "echo \"Hello, $name!\"" []
              ])
       ]
   }

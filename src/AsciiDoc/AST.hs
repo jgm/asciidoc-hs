@@ -208,7 +208,7 @@ instance FromJSON Callout
 
 -- | Source line with possible annotation
 data SourceLine =
-    SourceLine Text (Maybe Callout)
+    SourceLine Text [Callout]
   deriving (Show, Eq, Ord, Generic, Data, Typeable)
 
 instance ToJSON SourceLine where

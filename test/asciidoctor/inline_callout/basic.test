@@ -16,6 +16,6 @@ Document
           mempty
           Nothing
           (Listing
-             Nothing [ SourceLine "\"Hello world!\" //" (Just (Callout 1)) ])
+             Nothing [ SourceLine "\"Hello world!\" //" [ Callout 1 ] ])
       ]
   }

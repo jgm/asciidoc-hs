@@ -15,7 +15,6 @@ Document
           mempty
           Nothing
           (Listing
-             (Just (Language "ruby"))
-             [ SourceLine "test = 3" (Just (Callout 1)) ])
+             (Just (Language "ruby")) [ SourceLine "test = 3" [ Callout 1 ] ])
       ]
   }

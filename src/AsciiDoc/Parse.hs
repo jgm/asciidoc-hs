@@ -68,7 +68,7 @@ parseDocument getFileContents raiseError t =
   handleIncludeBlock (Block attr mbtitle (IncludeListing mblang fp Nothing)) = do
      contents <- getFileContents fp
      pure $ Block attr mbtitle $ IncludeListing mblang fp
-          $ Just (map (\ln -> SourceLine ln Nothing) (T.lines contents))
+          $ Just (map (\ln -> SourceLine ln []) (T.lines contents))
   handleIncludeBlock x = pure x
 
   resolveAttributeReferences doc =
@@ -833,7 +833,7 @@ pListing mbtitle attr = (do
   lns <- toSourceLines <$> pDelimitedLiteralBlock '-' 4
   pure $ Block attr' mbtitle $
     case lns of
-      [SourceLine x Nothing] | "include::" `T.isPrefixOf` x
+      [SourceLine x []] | "include::" `T.isPrefixOf` x
           , Right ("include", target) <- A.parseOnly pBlockMacro' x
           -> IncludeListing mbLang (T.unpack target) Nothing
       _ -> Listing mbLang lns)
@@ -858,21 +858,21 @@ toSourceLines = go 1
    go _ [] = []
    go nextnum (t:ts) =
     case T.breakOnAll "<" t of
-      [] -> SourceLine t Nothing : go nextnum ts
+      [] -> SourceLine t [] : go nextnum ts
       xs@(_:_) ->
         let (t', rest) = last xs
             (ds, rest') = T.span (\c -> isDigit c || c == '.') (T.drop 1 rest)
          in if T.strip rest' == ">" && (T.all isDigit ds || ds == ".")
                then
                  if ds == "."
-                    then SourceLine (T.stripEnd t') (Just (Callout nextnum))
+                    then SourceLine (T.stripEnd t') [Callout nextnum]
                           : go (nextnum + 1) ts
                     else case readDecimal ds of
-                           Just num -> SourceLine (T.stripEnd t') (Just (Callout num))
+                           Just num -> SourceLine (T.stripEnd t') [Callout num]
                                         : go (num + 1) ts
                            Nothing ->
-                             SourceLine t Nothing : go nextnum ts
-               else SourceLine t Nothing : go nextnum ts
+                             SourceLine t [] : go nextnum ts
+               else SourceLine t [] : go nextnum ts
 
 pExampleBlock :: Maybe BlockTitle -> Attr -> P Block
 pExampleBlock mbtitle attr = do

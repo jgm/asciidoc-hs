@@ -20,9 +20,9 @@ Document
           (Just (BlockTitle [ Inline mempty (Str "Odelay!") ]))
           (Listing
              Nothing
-             [ SourceLine "5.times do" Nothing
-             , SourceLine "  print \"Odelay!\"" Nothing
-             , SourceLine "end" Nothing
+             [ SourceLine "5.times do" []
+             , SourceLine "  print \"Odelay!\"" []
+             , SourceLine "end" []
              ])
       ]
   }
