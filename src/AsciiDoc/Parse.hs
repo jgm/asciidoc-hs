@@ -857,22 +857,28 @@ toSourceLines = go 1
  where
    go _ [] = []
    go nextnum (t:ts) =
+     let (t', callouts) = getCallouts [] t
+         (nextnum'', callouts') =
+                    foldl' (\(nextnum', cs) c ->
+                               case c of
+                                 Nothing -> (nextnum' + 1, Callout nextnum' : cs)
+                                 Just i -> (i + 1, Callout i : cs))
+                       (nextnum, []) callouts
+     in SourceLine t' (reverse callouts') : go nextnum'' ts
+   getCallouts callouts t =
     case T.breakOnAll "<" t of
-      [] -> SourceLine t [] : go nextnum ts
+      [] -> (t, callouts)
       xs@(_:_) ->
         let (t', rest) = last xs
             (ds, rest') = T.span (\c -> isDigit c || c == '.') (T.drop 1 rest)
          in if T.strip rest' == ">" && (T.all isDigit ds || ds == ".")
                then
                  if ds == "."
-                    then SourceLine (T.stripEnd t') [Callout nextnum]
-                          : go (nextnum + 1) ts
+                    then getCallouts (Nothing : callouts) (T.stripEnd t')
                     else case readDecimal ds of
-                           Just num -> SourceLine (T.stripEnd t') [Callout num]
-                                        : go (num + 1) ts
-                           Nothing ->
-                             SourceLine t [] : go nextnum ts
-               else SourceLine t [] : go nextnum ts
+                           Just num -> getCallouts (Just num : callouts) (T.stripEnd t')
+                           Nothing -> (t, callouts)
+               else (t, callouts)
 
 pExampleBlock :: Maybe BlockTitle -> Attr -> P Block
 pExampleBlock mbtitle attr = do

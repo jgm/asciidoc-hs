@@ -1,0 +1,29 @@
+[,ruby]
+----
+import mylib <1> <2> <.>
+def foo
+  return 42 <.> <5>
+end
+----
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing
+             (Just (Language "ruby"))
+             [ SourceLine "import mylib" [ Callout 1 , Callout 2 , Callout 3 ]
+             , SourceLine "def foo" []
+             , SourceLine "  return 42" [ Callout 4 , Callout 5 ]
+             , SourceLine "end" []
+             ])
+      ]
+  }
