@@ -1,0 +1,26 @@
+3. a
+4. b
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             (OrderedList (Level 1) (Just 3))
+             [ ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a") ]) ]
+             , ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b") ]) ]
+             ])
+      ]
+  }

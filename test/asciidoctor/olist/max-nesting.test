@@ -18,7 +18,7 @@ Document
           mempty
           Nothing
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem
                  Nothing
                  [ Block
@@ -27,7 +27,7 @@ Document
                      mempty
                      Nothing
                      (List
-                        (OrderedList (Level 2))
+                        (OrderedList (Level 2) Nothing)
                         [ ListItem
                             Nothing
                             [ Block
@@ -36,7 +36,7 @@ Document
                                 mempty
                                 Nothing
                                 (List
-                                   (OrderedList (Level 3))
+                                   (OrderedList (Level 3) Nothing)
                                    [ ListItem
                                        Nothing
                                        [ Block
@@ -47,7 +47,7 @@ Document
                                            mempty
                                            Nothing
                                            (List
-                                              (OrderedList (Level 4))
+                                              (OrderedList (Level 4) Nothing)
                                               [ ListItem
                                                   Nothing
                                                   [ Block
@@ -58,7 +58,7 @@ Document
                                                       mempty
                                                       Nothing
                                                       (List
-                                                         (OrderedList (Level 5))
+                                                         (OrderedList (Level 5) Nothing)
                                                          [ ListItem
                                                              Nothing
                                                              [ Block

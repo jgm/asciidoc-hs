@@ -23,7 +23,7 @@ Document
           mempty
           Nothing
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem
                  Nothing
                  [ Block

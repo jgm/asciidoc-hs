@@ -16,7 +16,7 @@ Document
           mempty
           (Just (BlockTitle [ Inline mempty (Str "Steps") ]))
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem
                  Nothing
                  [ Block mempty Nothing (Paragraph [ Inline mempty (Str "Step 1") ])

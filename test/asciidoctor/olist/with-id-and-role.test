@@ -17,7 +17,7 @@ Document
           ( [] , fromList [ ( "id" , "steps" ) , ( "role" , "green" ) ] )
           Nothing
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem
                  Nothing
                  [ Block mempty Nothing (Paragraph [ Inline mempty (Str "Step 1") ])

@@ -278,7 +278,7 @@ instance FromJSON AdmonitionType
 -- | List types
 data ListType
   = BulletList Level
-  | OrderedList Level
+  | OrderedList Level (Maybe Int)
   | CheckList
   | CalloutList
   deriving (Show, Eq, Generic, Data, Typeable)

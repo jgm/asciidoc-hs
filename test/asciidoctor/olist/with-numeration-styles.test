@@ -23,7 +23,7 @@ Document
           ( [ "decimal" ] , fromList [] )
           Nothing
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem
                  Nothing
                  [ Block
@@ -33,7 +33,7 @@ Document
                      ( [ "upperalpha" ] , fromList [] )
                      Nothing
                      (List
-                        (OrderedList (Level 2))
+                        (OrderedList (Level 2) Nothing)
                         [ ListItem
                             Nothing
                             [ Block
@@ -43,7 +43,7 @@ Document
                                 ( [ "loweralpha" ] , fromList [] )
                                 Nothing
                                 (List
-                                   (OrderedList (Level 3))
+                                   (OrderedList (Level 3) Nothing)
                                    [ ListItem
                                        Nothing
                                        [ Block
@@ -55,7 +55,7 @@ Document
                                            ( [ "lowerroman" ] , fromList [] )
                                            Nothing
                                            (List
-                                              (OrderedList (Level 4))
+                                              (OrderedList (Level 4) Nothing)
                                               [ ListItem
                                                   Nothing
                                                   [ Block
@@ -67,7 +67,7 @@ Document
                                                       ( [ "lowergreek" ] , fromList [] )
                                                       Nothing
                                                       (List
-                                                         (OrderedList (Level 5))
+                                                         (OrderedList (Level 5) Nothing)
                                                          [ ListItem
                                                              Nothing
                                                              [ Block

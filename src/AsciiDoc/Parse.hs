@@ -717,7 +717,7 @@ pDefinitionListItem blockContexts = do
 
 pList :: [BlockContext] -> P BlockType
 pList blockContexts = do
-  (c, lev, mbCheckboxState) <- pAnyListItemStart
+  (c, lev, mbStart, mbCheckboxState) <- pAnyListItemStart
   let guardContext ctx =
        case ctx of
          ListContext c' lev' -> guard $ c /= c' || lev > lev'
@@ -730,13 +730,13 @@ pList blockContexts = do
         | c == '-'
         , Just _ <- mbCheckboxState
           = CheckList
-        | c == '.' = OrderedList (Level lev)
+        | c == '.' || c == '1' = OrderedList (Level lev) mbStart
         | c == '<' = CalloutList
         | otherwise = BulletList (Level lev)
   pure $ List listType (x:xs)
 
-pAnyListItemStart :: P (Char, Int, Maybe CheckboxState)
-pAnyListItemStart = do
+pAnyListItemStart :: P (Char, Int, Maybe Int, Maybe CheckboxState)
+pAnyListItemStart = (do
   c <- A.satisfy (\c -> c == '*' || c == '.' || c == '-' || c == '<')
   lev <- if c == '<'
             then pure 1
@@ -748,7 +748,12 @@ pAnyListItemStart = do
   mbCheck <- if c == '-' || c == '*'
                 then optional pCheckbox
                 else pure Nothing
-  pure (c, lev, mbCheck)
+  pure (c, lev, Nothing, mbCheck))
+ <|> (do d <- A.decimal
+         char '.'
+         char ' '
+         pure ('1', 1, Just d, Nothing))
+
 
 pCheckbox :: P CheckboxState
 pCheckbox = do
@@ -764,9 +769,12 @@ pCheckbox = do
 pListItemStart :: Char -> Int -> P ()
 pListItemStart c lev = do
   A.skipWhile (== ' ')
-  if c == '<'
-     then char '<' *> (A.string "." <|> A.takeWhile1 isDigit) *> char '>'
-     else void $ A.count lev (char c)
+  case c of
+    '<' -> char '<' *> (A.string "." <|> A.takeWhile1 isDigit) *> char '>'
+    '1' -> do guard (lev == 1)
+              void (A.decimal :: P Int)
+              char '.'
+    _ -> void $ A.count lev (char c)
   char ' '
 
 pListItem :: [BlockContext] -> P ListItem

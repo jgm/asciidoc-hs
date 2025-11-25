@@ -92,7 +92,7 @@ testDoc = Document
   , docBlocks =
       [ Block mempty Nothing
           (List
-             (OrderedList (Level 1))
+             (OrderedList (Level 1) Nothing)
              [ ListItem Nothing
                  [ Block mempty Nothing
                      (Paragraph
@@ -105,7 +105,7 @@ testDoc = Document
                         ])
                  , Block mempty Nothing
                      (List
-                        (OrderedList (Level 2))
+                        (OrderedList (Level 2) Nothing)
                         [ ListItem Nothing
                             [ Block mempty (Just ((BlockTitle [Inline mempty (Str "The title")])))
                                 (Paragraph
@@ -142,7 +142,7 @@ mapInlineTest = testCase "mapInlines" $ do
       , docBlocks =
           [ Block mempty Nothing
               (List
-                 (OrderedList (Level 1))
+                 (OrderedList (Level 1) Nothing)
                  [ ListItem Nothing
                      [ Block mempty Nothing
                          (Paragraph
@@ -155,7 +155,7 @@ mapInlineTest = testCase "mapInlines" $ do
                             ])
                      , Block mempty Nothing
                          (List
-                            (OrderedList (Level 2))
+                            (OrderedList (Level 2) Nothing)
                             [ ListItem Nothing
                                 [ Block mempty (Just ((BlockTitle [Inline mempty (Str "X")])))
                                     (Paragraph
@@ -180,12 +180,12 @@ mapBlockTest = testCase "mapBlocks" $ do
       , docBlocks =
           [ Block mempty Nothing
               (List
-                 (OrderedList (Level 1))
+                 (OrderedList (Level 1) Nothing)
                  [ ListItem Nothing
                      [ Block mempty Nothing ThematicBreak
                      , Block mempty Nothing
                          (List
-                            (OrderedList (Level 2))
+                            (OrderedList (Level 2) Nothing)
                             [ ListItem Nothing
                                 [ Block mempty (Just ((BlockTitle [Inline mempty (Str "The title")])))
                                     ThematicBreak
