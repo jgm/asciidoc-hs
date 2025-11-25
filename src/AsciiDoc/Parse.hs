@@ -1236,12 +1236,15 @@ pInlineMacro :: P Inline
 pInlineMacro = do
   name <- A.choice (map (\n -> A.string n <* char ':') (M.keys inlineMacros))
   let targetChars = mconcat <$> some
-        (A.takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
+       ( (A.string "pass:" *> char '[' *> A.takeWhile1 (/=']') <* char ']')
+         <|>
+         A.takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
          <|>
          (char '\\' *> (T.singleton <$> A.satisfy (\c -> c == '[' || c == '+')))
          <|>
-         (do Inline _ (Str t) <- pInMatched False '+' mempty Str
-             pure t))
+        (do Inline _ (Str t) <- pInMatched False '+' mempty Str
+            pure t)
+       )
   target <- mconcat <$> many targetChars
   handleInlineMacro name target
 
