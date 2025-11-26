@@ -4,6 +4,7 @@ Document
   { docMeta =
       Meta
         { docTitle = []
+        , docTitleAttributes = Nothing
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes = fromList [ ( "sectids" , "" ) ]

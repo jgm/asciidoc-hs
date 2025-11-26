@@ -14,6 +14,7 @@ Document
             [ Inline
                 mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
             ]
+        , docTitleAttributes = Nothing
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes =

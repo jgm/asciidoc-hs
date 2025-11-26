@@ -15,6 +15,7 @@ Document
   { docMeta =
       Meta
         { docTitle = [ Inline mempty (Str "Title") ]
+        , docTitleAttributes = Nothing
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes = fromList [ ( "sectids" , "" ) ]

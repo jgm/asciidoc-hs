@@ -13,6 +13,7 @@ Document
   { docMeta =
       Meta
         { docTitle = [ Inline mempty (Str "Document Title") ]
+        , docTitleAttributes = Nothing
         , docAuthors = []
         , docRevision = Nothing
         , docAttributes =

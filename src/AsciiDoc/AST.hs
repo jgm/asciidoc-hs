@@ -82,15 +82,17 @@ instance FromJSON Revision
 -- | Document metadata
 data Meta = Meta
   { docTitle :: [Inline]
+  , docTitleAttributes :: Maybe Attr
   , docAuthors :: [Author]
   , docRevision :: Maybe Revision
   , docAttributes :: Map Text Text
   } deriving (Eq, Generic, Data, Typeable)
 
 instance Show Meta where
-  show (Meta [] [] Nothing m) | null m = "Meta [] [] Nothing mempty"
-  show (Meta title authors revision attributes) =
+  show (Meta [] Nothing [] Nothing m) | null m = "Meta [] Nothing [] Nothing mempty"
+  show (Meta title titleAttr authors revision attributes) =
     "Meta{ docTitle = " <> show title <>
+    ", docTitleAttributes = " <> show titleAttr <>
     ", docAuthors = " <> show authors <>
     ", docRevision = " <> show revision <>
     ", docAttributes = " <> show attributes

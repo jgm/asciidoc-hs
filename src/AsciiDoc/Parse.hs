@@ -108,10 +108,15 @@ pDocumentHeader = do
   let handleAttr m (Left k) = M.delete k m
       handleAttr m (Right (k,v)) = M.insert k v m
   let defaultDocAttrs = M.insert "sectids" "" $ mempty
-  A.skipMany pLineComment
+  skipBlankLines []
   topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
-  A.skipMany pLineComment
-  title <- A.option [] pDocumentTitle
+  skipBlankLines []
+  (title, titleAttr) <- A.option ([], Nothing) $ do
+    (_,titleAttr) <- pTitlesAndAttributes
+    title <- pDocumentTitle
+    pure (title, case titleAttr of
+                   Attr [] kv | M.null kv -> Nothing
+                   _ -> Just titleAttr)
   authors <- if null title
                 then pure []
                 else A.option [] pDocumentAuthors
@@ -122,8 +127,9 @@ pDocumentHeader = do
   -- TODO add authors from attributes
   -- = The Intrepid Chronicles
   -- :author: Kismet R. Lee
-  -- :email: kismet@asciidoctor.org 
+  -- :email: kismet@asciidoctor.org
   pure $ Meta{ docTitle = title
+             , docTitleAttributes = titleAttr
              , docAuthors = authors
              , docRevision = revision
              , docAttributes = attrs }

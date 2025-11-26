@@ -7,6 +7,7 @@ Document
             [ Inline
                 mempty (Str "The Dangerous and Thrilling Documentation Chronicles")
             ]
+        , docTitleAttributes = Nothing
         , docAuthors =
             [ Author { authorName = "" , authorEmail = Nothing } ]
         , docRevision = Nothing

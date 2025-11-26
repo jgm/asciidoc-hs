@@ -88,7 +88,7 @@ ensureFinalNewline xs = case T.unsnoc xs of
 
 testDoc :: Document
 testDoc = Document
-  { docMeta = Meta [] [] Nothing mempty
+  { docMeta = Meta [] Nothing [] Nothing mempty
   , docBlocks =
       [ Block mempty Nothing
           (List
@@ -138,7 +138,7 @@ mapInlineTest = testCase "mapInlines" $ do
                  Inline _ (Str _) -> pure $ Inline mempty (Str "X")
                  x -> pure x) testDoc
   d @?= Document
-      { docMeta = Meta [] [] Nothing mempty
+      { docMeta = Meta [] Nothing [] Nothing mempty
       , docBlocks =
           [ Block mempty Nothing
               (List
@@ -176,7 +176,7 @@ mapBlockTest = testCase "mapBlocks" $ do
                  pure $ Block attr mbtitle ThematicBreak
                x -> pure x) testDoc
   d @?= Document
-      { docMeta = Meta [] [] Nothing mempty
+      { docMeta = Meta [] Nothing [] Nothing mempty
       , docBlocks =
           [ Block mempty Nothing
               (List
