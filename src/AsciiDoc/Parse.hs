@@ -1200,7 +1200,8 @@ pInMatched :: Bool -> Char -> Attr -> (Text -> InlineType) -> P Inline
 pInMatched maybeUnconstrained delim attr toInlineType = do
   char delim
   isDoubled <- A.option False (True <$ char delim)
-  guard $ isDoubled || maybeUnconstrained
+  followedBySpace <- maybe True isSpace <$> A.peekChar
+  guard $ isDoubled || (maybeUnconstrained && not followedBySpace)
   cs <- A.manyTill ( (char '\\' *> A.char delim) <|> A.anyChar )
                    (if isDoubled
                        then char delim *> char delim
