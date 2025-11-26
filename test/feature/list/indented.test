@@ -1,0 +1,26 @@
+  * a
+  * b
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a") ]) ]
+             , ListItem
+                 Nothing
+                 [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b") ]) ]
+             ])
+      ]
+  }
