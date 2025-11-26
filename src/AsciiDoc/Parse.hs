@@ -223,6 +223,17 @@ parseBlocks :: Text -> P [Block]
 parseBlocks t =
   either fail pure $ A.parseOnly (many (pBlock [])) (T.strip t <> "\n")
 
+parseParagraphs :: Text -> P [Block]
+parseParagraphs t =
+  either fail pure $ A.parseOnly (many pParagraph) (T.strip t <> "\n")
+ where
+  pParagraph = do
+    skipBlankLines []
+    (mbtitle, attr@(Attr _ kvs)) <- pTitlesAndAttributes
+    let hardbreaks = M.lookup "options" kvs == Just "hardbreaks"
+    A.skipMany (pCommentBlock attr)
+    Block attr mbtitle <$> pPara [] hardbreaks
+
 parseInlines :: Text -> [Inline]
 parseInlines t = either (const mempty) id $ A.parseOnly pInlines (T.strip t)
 
@@ -494,7 +505,7 @@ parseCellContents sty t =
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
         (t <> "\n"))
-    DefaultStyle -> parseBlocks t
+    DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
     EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
     StrongStyle -> map (surroundPara Bold) <$> parseBlocks t

@@ -8,6 +8,7 @@ Mostly works, given my limited testing.
 
 Not (yet) supported:
 
+- [ ] Tables inside table cells
 - [ ] Automatically assigned document attributes (e.g. `firstname`,
       derived from author)
 - [ ] Sequence counters
