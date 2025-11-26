@@ -354,7 +354,7 @@ parseColspecs t =
     Right cs -> pure cs
 
 pColspecs :: P [ColumnSpec]
-pColspecs = mconcat <$> A.sepBy pColspecPart pComma
+pColspecs = mconcat <$> A.sepBy pColspecPart pComma <* A.option () pComma
 
 pColspecPart :: P [ColumnSpec]
 pColspecPart = do
@@ -1043,7 +1043,7 @@ pFormattedTextAttributes = do
   as <- pShorthandAttributes
   ps <- A.option []
          (do unless (as == mempty) pComma
-             A.sepBy1 pAttributeValue pComma)
+             A.sepBy1 pAttributeValue pComma <* A.option () pComma)
   char ']'
   if as == mempty
      then
@@ -1058,7 +1058,7 @@ pAttributes = do
   as <- pShorthandAttributes
   bs <- A.option []
          (do unless (as == mempty) pComma
-             A.sepBy pAttribute pComma)
+             A.sepBy pAttribute pComma <* A.option () pComma)
   char ']'
   let positional = lefts bs
   let kvs = rights bs
