@@ -756,6 +756,7 @@ pList blockContexts = do
 
 pAnyListItemStart :: P (Char, Int, Maybe Int, Maybe CheckboxState)
 pAnyListItemStart = (do
+  A.skipWhile (== ' ')
   c <- A.satisfy (\c -> c == '*' || c == '.' || c == '-' || c == '<')
   lev <- if c == '<'
             then pure 1
