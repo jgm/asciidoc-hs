@@ -27,16 +27,15 @@ Document
           Nothing
           (Paragraph
              [ Inline mempty (Str "Refer to ")
-             , Inline mempty (CrossReference "install" (Just []))
+             , Inline
+                 mempty
+                 (CrossReference
+                    "install" (Just [ Inline mempty (Str "Installation") ]))
              , Inline mempty (Str ".")
              ])
       , Block
-          mempty
-          Nothing
-          (Paragraph [ Inline mempty (InlineAnchor "install" []) ])
-      , Block
           Attr
-          ( [] , fromList [ ( "id" , "_installation" ) ] )
+          ( [] , fromList [ ( "id" , "install" ) ] )
           Nothing
           (Section (Level 1) [ Inline mempty (Str "Installation") ] [])
       ]

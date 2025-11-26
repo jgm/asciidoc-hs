@@ -270,7 +270,6 @@ pBlock blockContexts = do
             , pPageBreak
             , pList blockContexts
             , pDefinitionList blockContexts
-            , Paragraph . (:[]) <$> (pInlineAnchor <* pBlankLine)
             , pIndentedLiteral
             , pPara blockContexts hardbreaks
             ]
@@ -689,8 +688,17 @@ pTitlesAndAttributes = do
 
 pTitleOrAttribute :: P (Either BlockTitle Attr)
 pTitleOrAttribute =
-  ((Left <$> pTitle) <|> (Right <$> (pAttributes <* A.endOfLine)))
-    <* A.skipMany pBlankLine
+  ((Left <$> pTitle)
+    <|> (Right <$> (pAnchor <* A.endOfLine))
+    <|> (Right <$> (pAttributes <* A.endOfLine))
+  ) <* A.skipMany pBlankLine
+
+pAnchor :: P Attr
+pAnchor = do
+  void $ A.string "[["  -- [[anchor]] can set id
+  anchor <- A.takeWhile1 (\c -> not (A.isEndOfLine c || c == ']' || isSpace c))
+  void $ A.string "]]"
+  pure (Attr mempty (M.singleton "id" anchor))
 
 pTitle :: P BlockTitle
 pTitle = BlockTitle . parseInlines <$>

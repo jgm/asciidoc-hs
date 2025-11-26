@@ -11,11 +11,8 @@ Document
         }
   , docBlocks =
       [ Block
-          mempty
-          Nothing
-          (Paragraph [ Inline mempty (InlineAnchor "img-sunset" []) ])
-      , Block
-          mempty
+          Attr
+          ( [] , fromList [ ( "id" , "img-sunset" ) ] )
           Nothing
           (BlockImage (Target "sunset.jpg") Nothing Nothing Nothing)
       ]
