@@ -49,16 +49,21 @@ parseDocument getFileContents raiseError path t =
   toAnchorMap d = foldBlocks blockAnchor d <> foldInlines inlineAnchor d
 
   blockAnchor (Block (Attr _ kvs) _ (Section _ ils _))
-    | Just ident <- M.lookup "id" kvs = M.singleton ident ils
+    | Just ident <- M.lookup "id" kvs = M.singleton (T.pack path <> "#" <> ident) ils
   blockAnchor _ = mempty
 
-  inlineAnchor (Inline _ (InlineAnchor ident ils)) = M.singleton ident ils
-  inlineAnchor (Inline _ (BibliographyAnchor ident ils)) = M.singleton ident ils
+  inlineAnchor (Inline _ (InlineAnchor ident ils))
+    = M.singleton (T.pack path <> "#" <> ident) ils
+  inlineAnchor (Inline _ (BibliographyAnchor ident ils))
+    = M.singleton (T.pack path <> "#" <> ident) ils
   inlineAnchor _ = mempty
 
   resolveCrossReferences d = mapInlines (resolveCrossReference (toAnchorMap d)) d
   resolveCrossReference anchorMap (Inline attr (CrossReference ident Nothing))
-    | Just ils <- M.lookup ident anchorMap
+    | T.take 1 ident == "#"
+    , Just ils <- M.lookup ident anchorMap
+      = pure $ Inline attr (CrossReference ident (Just ils))
+    | Just ils <- M.lookup (T.pack path <> "#" <> ident) anchorMap
       = pure $ Inline attr (CrossReference ident (Just ils))
   resolveCrossReference _ x = pure x
 
