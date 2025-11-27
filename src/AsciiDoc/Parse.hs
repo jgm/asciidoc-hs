@@ -19,6 +19,7 @@ import qualified Data.Text.Read as TR
 import Data.Text (Text)
 import Data.List (foldl', intersperse)
 import qualified Data.Attoparsec.Text as A
+import System.FilePath
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
@@ -72,17 +73,25 @@ parseDocument getFileContents raiseError path t =
 
   handleIncludes parentPath = mapBlocks (handleIncludeBlock parentPath)
 
-  handleIncludeBlock parentPath (Block attr mbtitle (Include fp Nothing)) =
-    (do contents <- getFileContents fp
-        Block attr mbtitle . Include fp . Just . docBlocks <$>
+  handleIncludeBlock parentPath (Block attr mbtitle (Include fp Nothing)) = do
+    let fp' = resolvePath parentPath fp
+    (do contents <- getFileContents fp'
+        Block attr mbtitle . Include fp' . Just . docBlocks <$>
           go (A.parse pDocument contents))
-      >>= mapBlocks (handleIncludeBlock fp)
-  handleIncludeBlock parentPath (Block attr mbtitle (IncludeListing mblang fp Nothing)) =
-    (do contents <- getFileContents fp
-        pure $ Block attr mbtitle $ IncludeListing mblang fp
+      >>= mapBlocks (handleIncludeBlock fp')
+  handleIncludeBlock parentPath (Block attr mbtitle
+                                  (IncludeListing mblang fp Nothing)) = do
+    let fp' = resolvePath parentPath fp
+    (do contents <- getFileContents fp'
+        pure $ Block attr mbtitle $ IncludeListing mblang fp'
              $ Just (map (\ln -> SourceLine ln []) (T.lines contents)))
-      >>= mapBlocks (handleIncludeBlock fp)
+      >>= mapBlocks (handleIncludeBlock fp')
   handleIncludeBlock _ x = pure x
+
+  resolvePath parentPath fp =
+    if isRelative fp
+       then takeDirectory parentPath </> fp
+       else fp
 
 type P = A.Parser
 

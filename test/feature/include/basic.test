@@ -15,6 +15,15 @@ Document
       [ Block
           mempty
           Nothing
-          (Paragraph [ Inline mempty (Bold [ Inline mempty (Str "baz") ]) ])
+          (Include
+             "test/feature/include/inc/baz.adoc"
+             (Just
+                [ Block
+                    mempty
+                    Nothing
+                    (Paragraph [ Inline mempty (Bold [ Inline mempty (Str "baz") ]) ])
+                ]))
+      , Block
+          mempty Nothing (Paragraph [ Inline mempty (Str "and more") ])
       ]
   }

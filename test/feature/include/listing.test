@@ -18,7 +18,11 @@ Document
           Nothing
           (IncludeListing
              (Just (Language "asciidoc"))
-             "foo.adoc"
-             (Just [ SourceLine "foo" [] , SourceLine "bar" [] , SourceLine "*baz*" [] ]))
+             "test/feature/include/foo.adoc"
+             (Just
+                [ SourceLine "foo" []
+                , SourceLine "" []
+                , SourceLine "include::inc/bar.adoc[]" []
+                ]))
       ]
   }

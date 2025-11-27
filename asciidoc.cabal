@@ -30,6 +30,7 @@ library
                     , text
                     , mtl
                     , attoparsec
+                    , filepath
                     , containers
                     , tagsoup
                     , aeson

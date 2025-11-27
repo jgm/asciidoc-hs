@@ -12,11 +12,35 @@ Document
         , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks =
-      [ Block mempty Nothing (Paragraph [ Inline mempty (Str "foo") ])
-      , Block mempty Nothing (Paragraph [ Inline mempty (Str "bar") ])
-      , Block
+      [ Block
           mempty
           Nothing
-          (Paragraph [ Inline mempty (Bold [ Inline mempty (Str "baz") ]) ])
+          (Include
+             "test/feature/include/foo.adoc"
+             (Just
+                [ Block mempty Nothing (Paragraph [ Inline mempty (Str "foo") ])
+                , Block
+                    mempty
+                    Nothing
+                    (Include
+                       "test/feature/include/inc/bar.adoc"
+                       (Just
+                          [ Block mempty Nothing (Paragraph [ Inline mempty (Str "bar") ])
+                          , Block
+                              mempty
+                              Nothing
+                              (Include
+                                 "test/feature/include/inc/baz.adoc"
+                                 (Just
+                                    [ Block
+                                        mempty
+                                        Nothing
+                                        (Paragraph
+                                           [ Inline mempty (Bold [ Inline mempty (Str "baz") ]) ])
+                                    ]))
+                          ]))
+                ]))
+      , Block
+          mempty Nothing (Paragraph [ Inline mempty (Str "and more") ])
       ]
   }
