@@ -37,6 +37,7 @@ module AsciiDoc.AST
   , FootnoteId(..)
   , AttributeName(..)
   , Callout(..)
+  , IndexTerm(..)
   , SourceLine(..)
   ) where
 
@@ -278,7 +279,7 @@ data BlockType
   | PageBreak
   | ThematicBreak
   | Include FilePath (Maybe [Block])
-  | BlockIndex IndexTerm
+  | BlockIndexEntry IndexTerm
   deriving (Show, Eq, Generic, Data, Typeable)
 
 instance ToJSON BlockType where
@@ -447,7 +448,7 @@ data InlineType
   | CrossReference Text (Maybe [Inline])
   | AttributeReference AttributeName
   | Span [Inline]
-  | Index IndexTerm
+  | IndexEntry IndexTerm
   | Passthrough Text
   deriving (Show, Eq, Generic, Data, Typeable)
 

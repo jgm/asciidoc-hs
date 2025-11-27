@@ -290,8 +290,16 @@ pBlock blockContexts = do
             , pList blockContexts
             , pDefinitionList blockContexts
             , pIndentedLiteral
+            , pBlockIndexEntry
             , pPara blockContexts hardbreaks
             ]
+
+pBlockIndexEntry :: P BlockType
+pBlockIndexEntry = do
+  x <- pIndexEntry mempty <* pBlankLine
+  case x of
+    Inline _ (IndexEntry e) -> pure $ BlockIndexEntry e
+    _ -> mzero
 
 pTableBorder :: P TableSyntax
 pTableBorder = do
@@ -1176,6 +1184,7 @@ pInline prevChars = do
         '+' -> pTriplePassthrough <|> inMatched '+' attr Str
         '"' -> pQuoted '"' attr DoubleQuoted
         '\'' -> pQuoted '\'' attr SingleQuoted
+        '(' -> pIndexEntry attr
         _ -> mzero)
      <|> (do c <- A.peekChar'
              case c of
@@ -1188,6 +1197,17 @@ pInline prevChars = do
                '[' -> pBibAnchor <|> pInlineAnchor
                _ | isLetter c -> pInlineMacro <|> pAutolink <|> pEmailAutolink
                  | otherwise -> mzero)
+
+pIndexEntry :: Attr -> P Inline
+pIndexEntry attr = do
+  void $ A.string "(("
+  concealed <- True <$ char '('
+  terms <- A.takeWhile1 (/= ')')
+  Inline attr <$>
+    if concealed
+       then IndexEntry (TermConcealed (map T.strip (T.split (==',') terms)))
+                         <$ A.string ")))"
+       else IndexEntry (TermInText terms) <$ A.string "))"
 
 pTriplePassthrough :: P Inline
 pTriplePassthrough = Inline mempty . Passthrough . T.pack
@@ -1390,6 +1410,11 @@ inlineMacros = M.fromList
       Inline mempty . Math (Just AsciiMath) <$> pBracketedText)
   , ("stem", \_ ->
       Inline mempty . Math Nothing <$> pBracketedText)
+  , ("indexterm", \_ ->
+      Inline mempty . IndexEntry . TermConcealed .
+        map T.strip . T.split (==',') <$> pBracketedText)
+  , ("indexterm2", \_ ->
+      Inline mempty . IndexEntry . TermInText <$> pBracketedText)
   ]
 
 pBracketedText :: P Text
