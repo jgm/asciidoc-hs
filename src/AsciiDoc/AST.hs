@@ -40,6 +40,7 @@ module AsciiDoc.AST
   , SourceLine(..)
   ) where
 
+import Control.Monad
 import Data.Text (Text)
 import Data.Data (Data)
 import Data.Typeable (Typeable)
@@ -53,6 +54,15 @@ data Document = Document
   { docMeta :: Meta
   , docBlocks :: [Block]
   } deriving (Show, Eq, Generic, Data, Typeable)
+
+instance Semigroup Document where
+  d1 <> d2 = Document { docMeta = docMeta d1 <> docMeta d2
+                      , docBlocks = docBlocks d1 <> docBlocks d2
+                      }
+
+instance Monoid Document where
+  mappend = (<>)
+  mempty = Document mempty mempty
 
 instance ToJSON Document where
     toEncoding = genericToEncoding defaultOptions
@@ -89,7 +99,7 @@ data Meta = Meta
   } deriving (Eq, Generic, Data, Typeable)
 
 instance Show Meta where
-  show (Meta [] Nothing [] Nothing m) | null m = "Meta [] Nothing [] Nothing mempty"
+  show x | x == mempty = "Meta mempty"
   show (Meta title titleAttr authors revision attributes) =
     "Meta{ docTitle = " <> show title <>
     ", docTitleAttributes = " <> show titleAttr <>
@@ -101,6 +111,23 @@ instance Show Meta where
 instance ToJSON Meta where
     toEncoding = genericToEncoding defaultOptions
 instance FromJSON Meta
+
+instance Semigroup Meta where  -- left-biased
+  m1 <> m2 = Meta { docTitle = case docTitle m1 of
+                                 [] -> docTitle m2
+                                 ils -> ils
+                  , docTitleAttributes =
+                               case docTitle m1 of
+                                 [] -> docTitleAttributes m2
+                                 _ -> docTitleAttributes m2
+                  , docAuthors = docAuthors m1 <> docAuthors m2
+                  , docRevision = docRevision m1 `mplus` docRevision m2
+                  , docAttributes = docAttributes m1 <> docAttributes m2
+                  }
+
+instance Monoid Meta where
+  mappend = (<>)
+  mempty = Meta [] Nothing [] Nothing mempty
 
 -- | Attributes attached to an element.
 -- The first parameter stores positional attributes in order.

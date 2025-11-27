@@ -67,7 +67,7 @@ toGoldenTest fp =
     error $ "Parse error at position " <> show pos <> ": " <> msg
 
   convert inText =
-    T.pack . ppShow <$> parseDocument TIO.readFile raiseError inText
+    T.pack . ppShow <$> parseDocument TIO.readFile raiseError fp inText
 
   readGoldenTest :: FilePath -> IO (T.Text, T.Text)
   readGoldenTest fp' = do

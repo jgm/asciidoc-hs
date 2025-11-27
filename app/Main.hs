@@ -57,17 +57,16 @@ main :: IO ()
 main = do
   options <- execParser opts
 
-  -- Read input
-  input <- case optInputFiles options of
-    [] -> TIO.getContents
-    fs -> mconcat <$> mapM TIO.readFile fs
-
   let raiseError pos msg = do
         hPutStrLn stderr $ "Parse error at position " <> show pos <> ": " <> msg
         exitFailure
 
   -- Parse the document
-  doc <- parseDocument TIO.readFile raiseError input
+  doc <- case optInputFiles options of
+          [] -> TIO.getContents >>= parseDocument TIO.readFile raiseError "stdin"
+          fs -> mconcat <$> mapM (\fp ->
+                  TIO.readFile fp >>= parseDocument TIO.readFile raiseError fp)
+                fs
   case optOutputFormat options of
     AST -> putStrLn $ ppShow doc
     JSON -> do

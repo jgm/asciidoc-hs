@@ -30,9 +30,10 @@ import AsciiDoc.Generic
 parseDocument :: Monad m
               => (FilePath -> m Text) -- ^ Get contents of an included file
               -> (Int -> String -> m Document) -- ^ Raise an error given source pos and message
+              -> FilePath -- ^ Path of file containing the text (need for include handling)
               -> Text -- ^ Text to convert
               -> m Document
-parseDocument getFileContents raiseError t =
+parseDocument getFileContents raiseError path t =
    go (A.parse pDocument t) >>= handleIncludes
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
@@ -509,6 +510,7 @@ parseCellContents sty t =
       either (fail . show) (pure . docBlocks)
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
+       "table-cell"  -- TODO somehow get file path here 
         (t <> "\n"))
     DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
