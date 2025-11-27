@@ -8,11 +8,6 @@ Mostly works, given my limited testing.
 
 Not (yet) supported:
 
-- [ ] Index terms
-    indexterm2:[Lancelot]
-    indexterm:[knight, Knight of the Round Table, Lancelot]
-    I, ((Arthur)),
-    Excalibur(((Sword, Broadsword, Excalibur)))
 - [ ] Tables inside table cells
 - [ ] Automatically assigned document attributes (e.g. `firstname`,
       derived from author)

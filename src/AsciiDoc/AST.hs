@@ -279,7 +279,6 @@ data BlockType
   | PageBreak
   | ThematicBreak
   | Include FilePath (Maybe [Block])
-  | BlockIndexEntry IndexTerm
   deriving (Show, Eq, Generic, Data, Typeable)
 
 instance ToJSON BlockType where

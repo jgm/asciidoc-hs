@@ -1,0 +1,39 @@
+(((Weapon, Sword)))
+indexterm2:[Lancelot] was a knight.
+Heindexterm:[knight, Knight of the Round Table, Lancelot] did brave deeds.
+I, ((Arthur)), am a king.
+My sword is Excalibur(((Sword, Broadsword, Excalibur)))
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (IndexEntry (TermConcealed [ "Weapon" , "Sword" ]))
+             , Inline mempty (Str "\n")
+             , Inline mempty (IndexEntry (TermInText "Lancelot"))
+             , Inline mempty (Str " was a knight.\nHe")
+             , Inline
+                 mempty
+                 (IndexEntry
+                    (TermConcealed
+                       [ "knight" , "Knight of the Round Table" , "Lancelot" ]))
+             , Inline mempty (Str " did brave deeds.\nI, ")
+             , Inline mempty (IndexEntry (TermInText "Arthur"))
+             , Inline mempty (Str ", am a king.\nMy sword is Excalibur")
+             , Inline
+                 mempty
+                 (IndexEntry
+                    (TermConcealed [ "Sword" , "Broadsword" , "Excalibur" ]))
+             ])
+      ]
+  }

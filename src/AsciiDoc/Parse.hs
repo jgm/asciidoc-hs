@@ -290,16 +290,8 @@ pBlock blockContexts = do
             , pList blockContexts
             , pDefinitionList blockContexts
             , pIndentedLiteral
-            , pBlockIndexEntry
             , pPara blockContexts hardbreaks
             ]
-
-pBlockIndexEntry :: P BlockType
-pBlockIndexEntry = do
-  x <- pIndexEntry mempty <* pBlankLine
-  case x of
-    Inline _ (IndexEntry e) -> pure $ BlockIndexEntry e
-    _ -> mzero
 
 pTableBorder :: P TableSyntax
 pTableBorder = do
@@ -1201,7 +1193,7 @@ pInline prevChars = do
 pIndexEntry :: Attr -> P Inline
 pIndexEntry attr = do
   void $ A.string "(("
-  concealed <- True <$ char '('
+  concealed <- A.option False $ True <$ char '('
   terms <- A.takeWhile1 (/= ')')
   Inline attr <$>
     if concealed
