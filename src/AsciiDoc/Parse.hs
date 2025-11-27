@@ -57,9 +57,11 @@ parseDocument getFileContents raiseError path t =
   inlineAnchor _ = mempty
 
   resolveCrossReferences d = mapInlines (resolveCrossReference (toAnchorMap d)) d
-  resolveCrossReference anchorMap (Inline attr (CrossReference ident Nothing))
-    | Just ils <- M.lookup (T.takeWhileEnd (/= '#') ident) anchorMap
-      = pure $ Inline attr (CrossReference ident (Just ils))
+  resolveCrossReference anchorMap x@(Inline attr (CrossReference ident Nothing)) =
+    let ident' = T.takeWhileEnd (/= '#') ident -- strip off file part
+    in case M.lookup ident' anchorMap of
+        Just ils -> pure $ Inline attr (CrossReference ident' (Just ils))
+        _ -> pure x
   resolveCrossReference _ x = pure x
 
   resolveAttributeReferences doc =
