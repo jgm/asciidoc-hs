@@ -1,0 +1,21 @@
+======
+hi
+======
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (ExampleBlock
+             [ Block mempty Nothing (Paragraph [ Inline mempty (Str "hi") ]) ])
+      ]
+  }

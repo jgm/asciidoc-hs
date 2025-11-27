@@ -839,7 +839,7 @@ pDelimitedBlock c minimumNumber hardbreaks = do
   len <- length <$> some (char c) <* pBlankLine
   guard $ len >= minimumNumber
   let endFence = A.count len (char c) *> pBlankLine
-  A.manyTill (pBlock [DelimitedContext c minimumNumber hardbreaks]) endFence
+  A.manyTill (pBlock [DelimitedContext c len hardbreaks]) endFence
 
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
 pPassBlock mbtitle attr = do
