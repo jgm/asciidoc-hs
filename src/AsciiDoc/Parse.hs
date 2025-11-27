@@ -297,6 +297,7 @@ pTableBorder :: P TableSyntax
 pTableBorder = do
   syntax <- (PSV <$ char '|') <|> (DSV <$ char ':') <|> (CSV <$ char ',')
   void $ A.string "==="
+  A.skipWhile (=='=')
   pBlankLine
   A.skipMany pBlankLine
   pure syntax
@@ -574,7 +575,7 @@ pCellSep sep = do
   halign <- optional pHorizAlign
   valign <- optional pVertAlign
   sty <- (toCellStyle <$> A.satisfy (A.inClass "adehlms")) <|> pure Nothing
-  notFollowedBy (A.string "|===") <* char sep
+  notFollowedBy pTableBorder <* char sep
   pure $ CellData
     { cDuplicate = mult
     , cHorizAlign = halign

@@ -1,0 +1,75 @@
+|======
+| a | b
+| c | d
+|======
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
+             []
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "c") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "d") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
+      ]
+  }
