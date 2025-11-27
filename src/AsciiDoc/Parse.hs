@@ -1037,8 +1037,6 @@ pNormalLine blockContexts = do
   mapM_ (\(c, num) -> guard (not (T.all (== c) t' && T.length t' == num)))
         delims
   case blockContexts of
-    DelimitedContext c num _ : _ ->
-      guard $ t' /= T.pack (replicate num c)
     ListContext{} : _ -> do
       guard $ t' /= "+"
       guard $ not $ "::" `T.isInfixOf` t'
