@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -34,7 +35,7 @@ parseDocument :: Monad m
               -> Text -- ^ Text to convert
               -> m Document
 parseDocument getFileContents raiseError path t =
-   go (A.parse pDocument t) >>= handleIncludes
+   go (A.parse pDocument t) >>= handleIncludes path
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
@@ -60,18 +61,6 @@ parseDocument getFileContents raiseError path t =
       = pure $ Inline attr (CrossReference ident (Just ils))
   resolveCrossReference _ x = pure x
 
-  handleIncludes = mapBlocks handleIncludeBlock
-
-  handleIncludeBlock (Block attr mbtitle (Include fp Nothing)) = do
-     contents <- getFileContents fp
-     Block attr mbtitle . Include fp . Just . docBlocks <$>
-       go (A.parse pDocument contents)
-  handleIncludeBlock (Block attr mbtitle (IncludeListing mblang fp Nothing)) = do
-     contents <- getFileContents fp
-     pure $ Block attr mbtitle $ IncludeListing mblang fp
-          $ Just (map (\ln -> SourceLine ln []) (T.lines contents))
-  handleIncludeBlock x = pure x
-
   resolveAttributeReferences doc =
     mapInlines (goAttref (docAttributes (docMeta doc))) doc
 
@@ -80,6 +69,20 @@ parseDocument getFileContents raiseError path t =
        Nothing -> return il
        Just x -> return $ Inline attr (Str x)
   goAttref _ il = return il
+
+  handleIncludes parentPath = mapBlocks (handleIncludeBlock parentPath)
+
+  handleIncludeBlock parentPath (Block attr mbtitle (Include fp Nothing)) =
+    (do contents <- getFileContents fp
+        Block attr mbtitle . Include fp . Just . docBlocks <$>
+          go (A.parse pDocument contents))
+      >>= mapBlocks (handleIncludeBlock fp)
+  handleIncludeBlock parentPath (Block attr mbtitle (IncludeListing mblang fp Nothing)) =
+    (do contents <- getFileContents fp
+        pure $ Block attr mbtitle $ IncludeListing mblang fp
+             $ Just (map (\ln -> SourceLine ln []) (T.lines contents)))
+      >>= mapBlocks (handleIncludeBlock fp)
+  handleIncludeBlock _ x = pure x
 
 type P = A.Parser
 
