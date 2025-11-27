@@ -1,4 +1,4 @@
-include::inc/baz.adoc[]
+include::foo.adoc[]
 
 and more
 >>>
@@ -12,7 +12,9 @@ Document
         , docAttributes = fromList [ ( "sectids" , "" ) ]
         }
   , docBlocks =
-      [ Block
+      [ Block mempty Nothing (Paragraph [ Inline mempty (Str "foo") ])
+      , Block mempty Nothing (Paragraph [ Inline mempty (Str "bar") ])
+      , Block
           mempty
           Nothing
           (Paragraph [ Inline mempty (Bold [ Inline mempty (Str "baz") ]) ])

@@ -5,6 +5,7 @@ import Test.Tasty.Golden
 import Test.Tasty.HUnit
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy.Encoding as TEL
 import qualified Data.ByteString.Lazy as BL
@@ -62,14 +63,11 @@ toGoldenTest fp =
     result <- convert inText
     constructGoldenTest (inText, result)
 
-  getFakeFile "foo.adoc" = Right ". one\n.. two\n"
-  getFakeFile fp' = raiseError (0 :: Int) (fp' <> " not found")
+  raiseError pos msg =
+    error $ "Parse error at position " <> show pos <> ": " <> msg
 
-  raiseError pos msg = Left $ "Parse error at position " <> show pos <> ": " <> msg
-
-  convert inText = case parseDocument getFakeFile raiseError inText of
-                     Left e -> fail e
-                     Right doc -> pure $ T.pack . ppShow $ doc
+  convert inText =
+    T.pack . ppShow <$> parseDocument TIO.readFile raiseError inText
 
   readGoldenTest :: FilePath -> IO (T.Text, T.Text)
   readGoldenTest fp' = do
