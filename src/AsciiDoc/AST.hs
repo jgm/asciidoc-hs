@@ -278,6 +278,7 @@ data BlockType
   | PageBreak
   | ThematicBreak
   | Include FilePath (Maybe [Block])
+  | BlockIndex IndexTerm
   deriving (Show, Eq, Generic, Data, Typeable)
 
 instance ToJSON BlockType where
@@ -303,6 +304,15 @@ data AdmonitionType
 instance ToJSON AdmonitionType where
     toEncoding = genericToEncoding defaultOptions
 instance FromJSON AdmonitionType
+
+data IndexTerm =
+    TermInText Text
+  | TermConcealed [Text]
+  deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON IndexTerm where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON IndexTerm
 
 -- | List types
 data ListType
@@ -437,6 +447,7 @@ data InlineType
   | CrossReference Text (Maybe [Inline])
   | AttributeReference AttributeName
   | Span [Inline]
+  | Index IndexTerm
   | Passthrough Text
   deriving (Show, Eq, Generic, Data, Typeable)
 
