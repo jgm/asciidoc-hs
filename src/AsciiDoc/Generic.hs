@@ -54,7 +54,7 @@ instance HasInlines a => GHasInlines (K1 i a) where
 
 instance {-# OVERLAPPABLE #-} HasInlines a where
   foldInlines _ _ = mempty
-  mapInlines _ x = pure x
+  mapInlines _ = pure
 
 instance (HasInlines a, Traversable t, Foldable t) => HasInlines (t a) where
   foldInlines f = foldMap (foldInlines f)
@@ -64,7 +64,7 @@ instance HasInlines Inline where
   foldInlines f i@(Inline _ ty) =
     f i <> foldInlines f ty
   mapInlines f (Inline attr ty) =
-    (Inline attr <$> mapInlines f ty) >>= f
+    mapInlines f ty >>= f . Inline attr
 
 instance HasInlines Document
 instance HasInlines Meta
@@ -118,7 +118,7 @@ instance HasBlocks a => GHasBlocks (K1 i a) where
 
 instance {-# OVERLAPPABLE #-} HasBlocks a where
   foldBlocks _ _ = mempty
-  mapBlocks _ x = pure x
+  mapBlocks _ = pure
 
 instance (HasBlocks a, Traversable t, Foldable t) => HasBlocks (t a) where
   foldBlocks f = foldMap (foldBlocks f)
@@ -128,7 +128,7 @@ instance HasBlocks Block where
   foldBlocks f i@(Block _ _ ty) =
     f i <> foldBlocks f ty
   mapBlocks f (Block attr mbtit ty) =
-    (Block attr mbtit <$> mapBlocks f ty) >>= f
+    mapBlocks f ty >>= f . Block attr mbtit
 
 instance HasBlocks Document
 instance HasBlocks Meta
