@@ -103,6 +103,7 @@ newtype P a = P { unP :: ReaderT ParserConfig A.Parser a }
 data ParserConfig = ParserConfig
                     { filePath :: FilePath
                     , blockContexts :: [BlockContext]
+                    , hardBreaks :: Bool
                     } deriving (Show)
 
 data ParseError = ParseError { errorPosition :: Int
@@ -112,7 +113,9 @@ data ParseError = ParseError { errorPosition :: Int
 parse :: P a -> FilePath -> T.Text -> Either ParseError a
 parse p fp t = go $ A.parse (runReaderT (unP p)
                              ParserConfig{ filePath = fp
-                                         , blockContexts = []}) t
+                                         , blockContexts = []
+                                         , hardBreaks = False
+                                         }) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
@@ -124,6 +127,9 @@ localP f (P p) = P (local f p)
 withBlockContext :: BlockContext -> P a -> P a
 withBlockContext bc =
   localP (\conf -> conf{ blockContexts = bc : blockContexts conf })
+
+withHardBreaks :: P a -> P a
+withHardBreaks = localP (\conf -> conf{ hardBreaks = True })
 
 liftP :: A.Parser a -> P a
 liftP = P . lift
@@ -204,7 +210,7 @@ sepBy1 = A.sepBy1
 data BlockContext =
     SectionContext Int
   | ListContext Char Int
-  | DelimitedContext Char Int Bool -- True if hardbreaks
+  | DelimitedContext Char Int
   deriving (Show, Eq)
 
 
@@ -354,7 +360,7 @@ parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
     (mbtitle, attr@(Attr _ kvs)) <- pTitlesAndAttributes
     let hardbreaks = M.lookup "options" kvs == Just "hardbreaks"
     skipMany (pCommentBlock attr)
-    Block attr mbtitle <$> pPara hardbreaks
+    (if hardbreaks then withHardBreaks else id) $ Block attr mbtitle <$> pPara
 
 parseInlines :: Text -> [Inline]
 parseInlines t = do
@@ -365,17 +371,18 @@ pBlock = do
   contexts <- asks blockContexts
   skipBlankLines
   (mbtitle, attr) <- pTitlesAndAttributes
-  let hardbreaks = case attr of
-                     (Attr _ kvs) |
-                       Just "hardbreaks" <- M.lookup "options" kvs -> True
-                     _ -> case contexts of
-                            (DelimitedContext _ _ True : _) -> True
-                            _ -> False
   case contexts of
     ListContext{} : _ -> skipWhile (== ' ')
     _ -> pure ()
   skipMany (pCommentBlock attr)
-  pBlockMacro mbtitle attr
+  let hardbreaks =
+       case attr of
+          Attr _ kvs
+            | Just opts <- M.lookup "options" kvs
+              -> "hardbreaks" `T.isInfixOf` opts
+          _ -> False
+  (if hardbreaks then withHardBreaks else id) $
+        pBlockMacro mbtitle attr
     <|> pDiscreteHeading mbtitle attr
     <|> pExampleBlock mbtitle attr
     <|> pSidebar mbtitle attr
@@ -395,7 +402,7 @@ pBlock = do
             , pList
             , pDefinitionList
             , pIndentedLiteral
-            , pPara hardbreaks
+            , pPara
             ]
 
 
@@ -431,7 +438,7 @@ pCommentBlock attr = pDelimitedCommentBlock <|> pAlternateCommentBlock
     case attr of
       Attr ["comment"] _ ->
         void (pDelimitedLiteralBlock '-' 2) <|>
-                void (match (withBlockContext (SectionContext (-1)) (pPara False)))
+                void (match (withBlockContext (SectionContext (-1)) pPara))
       _ -> mzero
 
 pBlockMacro :: Maybe BlockTitle -> Attr -> P Block
@@ -652,12 +659,12 @@ pDelimitedLiteralBlock c minimumNumber = do
   let endFence = count len (vchar c) *> pBlankLine
   manyTill pLine endFence
 
-pDelimitedBlock :: Char -> Int -> Bool -> P [Block]
-pDelimitedBlock c minimumNumber hardbreaks = do
+pDelimitedBlock :: Char -> Int -> P [Block]
+pDelimitedBlock c minimumNumber = do
   len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
   let endFence = count len (vchar c) *> pBlankLine
-  withBlockContext (DelimitedContext c len hardbreaks) $
+  withBlockContext (DelimitedContext c len) $
     manyTill pBlock endFence
 
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
@@ -753,7 +760,7 @@ toSourceLines = go 1
 
 pExampleBlock :: Maybe BlockTitle -> Attr -> P Block
 pExampleBlock mbtitle attr = do
-  bs <- pDelimitedBlock '=' 4 False
+  bs <- pDelimitedBlock '=' 4
   pure $ case attr of
     Attr (p:ps) kvs |
       Just adm <- parseAdmonitionType p ->
@@ -762,7 +769,7 @@ pExampleBlock mbtitle attr = do
 
 pSidebar :: Maybe BlockTitle -> Attr -> P Block
 pSidebar mbtitle attr =
-  Block attr mbtitle . Sidebar <$> pDelimitedBlock '*' 4 False
+  Block attr mbtitle . Sidebar <$> pDelimitedBlock '*' 4
 
 pVerse :: Maybe BlockTitle -> Attr -> P Block
 pVerse mbtitle (Attr ("verse":xs) kvs) = do
@@ -770,9 +777,10 @@ pVerse mbtitle (Attr ("verse":xs) kvs) = do
   let mbAttribution = if T.null attribution
                          then Nothing
                          else Just (Attribution attribution)
-  bs <- pDelimitedBlock '-' 2 True
-       <|> pDelimitedBlock '_' 4 True
-       <|> ((:[]) . Block mempty Nothing <$> pPara True)
+  bs <- withHardBreaks $
+           pDelimitedBlock '-' 2
+       <|> pDelimitedBlock '_' 4
+       <|> ((:[]) . Block mempty Nothing <$> pPara)
   pure $ Block (Attr [] kvs) mbtitle $ Verse mbAttribution bs
 pVerse _ _ = mzero
 
@@ -782,19 +790,18 @@ pQuoteBlock mbtitle (Attr ("quote":xs) kvs) = do
   let mbAttribution = if T.null attribution
                          then Nothing
                          else Just (Attribution attribution)
-  bs <- pDelimitedBlock '_' 4 True
-       <|> pDelimitedBlock '-' 2 True
-       <|> ((:[]) . Block mempty Nothing <$> pPara False)
+  bs <-    pDelimitedBlock '_' 4
+       <|> pDelimitedBlock '-' 2
+       <|> ((:[]) . Block mempty Nothing <$> pPara)
   pure $ Block (Attr [] kvs) mbtitle $ QuoteBlock mbAttribution bs
 pQuoteBlock _ _ = mzero
 
 pOpenBlock :: Maybe BlockTitle -> Attr -> P Block
 pOpenBlock mbtitle attr = Block attr mbtitle <$>
-  ((OpenBlock <$> pDelimitedBlock '-' 2 False)
+  ((OpenBlock <$> pDelimitedBlock '-' 2)
    <|>
   (QuoteBlock Nothing <$>
-     (pDelimitedBlock '-' 2 False
-      <|> pDelimitedBlock '_' 4 False)))
+     (pDelimitedBlock '-' 2 <|> pDelimitedBlock '_' 4)))
 
 parseAdmonitionType :: T.Text -> Maybe AdmonitionType
 parseAdmonitionType t =
@@ -806,9 +813,8 @@ parseAdmonitionType t =
     "WARNING" -> Just Warning
     _ -> Nothing
 
--- parameter is true if hardbreaks option is set
-pPara :: Bool -> P BlockType
-pPara hardbreaks = do
+pPara :: P BlockType
+pPara = do
   t' <- pNormalLine
   contexts <- asks blockContexts
   case contexts of
@@ -830,6 +836,7 @@ pPara hardbreaks = do
                  Nothing -> (t', Nothing)
           else (t', Nothing)
   ts <- many pNormalLine
+  hardbreaks <- asks hardBreaks
   let ils = (if hardbreaks
                 then newlinesToHardbreaks
                 else id) $ parseInlines $ T.unlines (t:ts)
@@ -857,7 +864,7 @@ pNormalLine = do
                 _ -> False
   let t' = T.stripEnd t
   contexts <- asks blockContexts
-  let delims = [(c, num) | DelimitedContext c num _ <- contexts]
+  let delims = [(c, num) | DelimitedContext c num <- contexts]
   mapM_ (\(c, num) -> guard (not (T.all (== c) t' && T.length t' == num)))
         delims
   case contexts of
