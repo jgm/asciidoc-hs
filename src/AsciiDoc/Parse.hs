@@ -12,7 +12,7 @@ module AsciiDoc.Parse
 import Text.HTML.TagSoup.Entity (lookupNamedEntity)
 import Data.Maybe (isNothing, listToMaybe, fromMaybe)
 import Data.Bifunctor (first)
-import Data.Either (lefts, rights)
+import Data.Either (lefts, rights, fromRight)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Read as TR
@@ -86,7 +86,7 @@ parseDocument getFileContents raiseError path t =
     let fp' = resolvePath parentPath fp
     (do contents <- getFileContents fp'
         pure $ Block attr mbtitle $ IncludeListing mblang fp'
-             $ Just (map (\ln -> SourceLine ln []) (T.lines contents)))
+             $ Just (map (`SourceLine` []) (T.lines contents)))
       >>= mapBlocks (handleIncludeBlock fp')
   handleIncludeBlock _ x = pure x
 
@@ -122,7 +122,7 @@ pDocumentHeader :: P Meta
 pDocumentHeader = do
   let handleAttr m (Left k) = M.delete k m
       handleAttr m (Right (k,v)) = M.insert k v m
-  let defaultDocAttrs = M.insert "sectids" "" $ mempty
+  let defaultDocAttrs = M.insert "sectids" "" mempty
   skipBlankLines []
   topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
   skipBlankLines []
@@ -256,7 +256,7 @@ parseParagraphs t =
     Block attr mbtitle <$> pPara [] hardbreaks
 
 parseInlines :: Text -> [Inline]
-parseInlines t = either (const mempty) id $ A.parseOnly pInlines (T.strip t)
+parseInlines t = fromRight mempty $ A.parseOnly pInlines (T.strip t)
 
 pBlock :: [BlockContext] -> P Block
 pBlock blockContexts = do
@@ -618,8 +618,8 @@ pCommentBlock attr = pDelimitedCommentBlock <|> pAlternateCommentBlock
   pAlternateCommentBlock = do
     case attr of
       Attr ["comment"] _ ->
-        (void (pDelimitedLiteralBlock '-' 2) <|>
-                (void $ A.match (pPara [SectionContext (-1)] False)))
+        void (pDelimitedLiteralBlock '-' 2) <|>
+                void (A.match (pPara [SectionContext (-1)] False))
       _ -> mzero
 
 pBlockMacro :: Maybe BlockTitle -> Attr -> P Block
