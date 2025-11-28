@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -9,6 +10,7 @@ module AsciiDoc.Parse
   ( parseDocument
   ) where
 
+import Prelude hiding (takeWhile)
 import Text.HTML.TagSoup.Entity (lookupNamedEntity)
 import Data.Maybe (isNothing, listToMaybe, fromMaybe)
 import Data.Bifunctor (first)
@@ -23,9 +25,11 @@ import System.FilePath
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
+import Control.Monad.Reader
 import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit)
 import AsciiDoc.AST
 import AsciiDoc.Generic
+import GHC.Bits (Bits)
 -- import Debug.Trace
 
 -- | Parse a complete AsciiDoc document
@@ -36,15 +40,12 @@ parseDocument :: Monad m
               -> Text -- ^ Text to convert
               -> m Document
 parseDocument getFileContents raiseError path t =
-   go (A.parse pDocument t) >>= handleIncludes path
+   handleResult (parse pDocument path t) >>= handleIncludes path
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
-  go (A.Fail i _ msg) = raiseError (T.length t - T.length i) msg
-  go (A.Partial continue) = go (continue "")
-  go (A.Done i r) | T.all isSpace i = pure r
-                | otherwise = raiseError (T.length t - T.length i)
-                               ("unexpected: " ++ T.unpack (T.take 20 i))
+  handleResult (Left err) = raiseError (errorPosition err) (errorMessage err)
+  handleResult (Right r) = pure r
 
   toAnchorMap d = foldBlocks blockAnchor d <> foldInlines inlineAnchor d
 
@@ -79,7 +80,7 @@ parseDocument getFileContents raiseError path t =
     let fp' = resolvePath parentPath fp
     (do contents <- getFileContents fp'
         Block attr mbtitle . Include fp' . Just . docBlocks <$>
-          go (A.parse pDocument contents))
+          handleResult (parse pDocument fp' contents))
       >>= mapBlocks (handleIncludeBlock fp')
   handleIncludeBlock parentPath (Block attr mbtitle
                                   (IncludeListing mblang fp Nothing)) = do
@@ -95,7 +96,100 @@ parseDocument getFileContents raiseError path t =
        then takeDirectory parentPath </> fp
        else fp
 
-type P = A.Parser
+--- Wrapped parser type:
+
+newtype P a = P { unP :: ReaderT FilePath A.Parser a }
+  deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
+            MonadFail, MonadReader FilePath)
+
+data ParseError = ParseError { errorPosition :: Int
+                             , errorMessage :: String
+                             }
+                  deriving (Show)
+
+parse :: P a -> FilePath -> T.Text -> Either ParseError a
+parse p fp t = go $ A.parse (runReaderT (unP p) fp) t
+ where
+  go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
+  go (A.Partial continue) = go (continue "")
+  go (A.Done _i r) = Right r
+
+liftP :: A.Parser a -> P a
+liftP = P . lift
+
+vchar :: Char -> P ()
+vchar = liftP . void . A.char
+
+char :: Char -> P Char
+char = liftP . A.char
+
+peekChar :: P (Maybe Char)
+peekChar = liftP A.peekChar
+
+peekChar' :: P Char
+peekChar' = liftP A.peekChar'
+
+anyChar :: P Char
+anyChar = liftP A.anyChar
+
+satisfy :: (Char -> Bool) -> P Char
+satisfy = liftP . A.satisfy
+
+space :: P Char
+space = liftP A.space
+
+isEndOfLine :: Char -> Bool
+isEndOfLine = A.isEndOfLine
+
+match :: P a -> P (T.Text, a)
+match p = P $ do
+  fp <- ask
+  lift $ A.match (runReaderT (unP p) fp)
+
+string :: T.Text -> P T.Text
+string = liftP . A.string
+
+decimal :: Integral a => P a
+decimal = liftP A.decimal
+
+hexadecimal :: (Integral a, Bits a) => P a
+hexadecimal = liftP A.hexadecimal
+
+endOfInput :: P ()
+endOfInput = liftP A.endOfInput
+
+endOfLine :: P ()
+endOfLine = liftP A.endOfLine
+
+takeWhile :: (Char -> Bool) -> P T.Text
+takeWhile f = liftP (A.takeWhile f)
+
+takeWhile1 :: (Char -> Bool) -> P T.Text
+takeWhile1 f = liftP (A.takeWhile1 f)
+
+skipWhile :: (Char -> Bool) -> P ()
+skipWhile f = liftP (A.skipWhile f)
+
+skipMany :: P a -> P ()
+skipMany = A.skipMany
+
+option :: Alternative f => a -> f a -> f a
+option = A.option
+
+choice :: [P a] -> P a
+choice = A.choice
+
+count :: Int -> P a -> P [a]
+count = A.count
+
+manyTill :: P a -> P b  -> P [a]
+manyTill = A.manyTill
+
+sepBy :: P a -> P b -> P [a]
+sepBy = A.sepBy
+
+sepBy1 :: P a -> P b -> P [a]
+sepBy1 = A.sepBy1
 
 --- Block parsing:
 
@@ -105,8 +199,6 @@ data BlockContext =
   | DelimitedContext Char Int Bool -- True if hardbreaks
   deriving (Show, Eq)
 
-char :: Char -> P ()
-char c = void $ A.char c
 
 pDocument :: P Document
 pDocument = do
@@ -115,6 +207,8 @@ pDocument = do
                           Just "book" -> 0
                           _ -> 1
   bs <- many (pBlock [SectionContext (minSectionLevel - 1)])
+  skipWhile isSpace
+  endOfInput
   pure $ Document { docMeta = meta , docBlocks = bs }
 
 pDocumentHeader :: P Meta
@@ -125,7 +219,7 @@ pDocumentHeader = do
   skipBlankLines []
   topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
   skipBlankLines []
-  (title, titleAttr) <- A.option ([], Nothing) $ do
+  (title, titleAttr) <- option ([], Nothing) $ do
     (_,titleAttr) <- pTitlesAndAttributes
     title <- pDocumentTitle
     pure (title, case titleAttr of
@@ -133,7 +227,7 @@ pDocumentHeader = do
                    _ -> Just titleAttr)
   authors <- if null title
                 then pure []
-                else A.option [] pDocumentAuthors
+                else option [] pDocumentAuthors
   revision <- if null title
                  then pure Nothing
                  else optional pDocumentRevision
@@ -146,12 +240,12 @@ pDocumentHeader = do
 
 pDocumentTitle :: P [Inline]
 pDocumentTitle = do
-  (char '=' <|> char '#') <* some (A.char ' ')
+  (vchar '=' <|> vchar '#') <* some (char ' ')
   parseInlines <$> pLine
 
 pDocumentAuthors :: P [Author]
 pDocumentAuthors = do
-  mbc <- A.peekChar
+  mbc <- peekChar
   case mbc of
     Just c | isSpace c || c == ':' -> mzero
     _ -> parseAuthors <$> pLine
@@ -172,13 +266,13 @@ parseAuthor t =
 
 pDocumentRevision :: P Revision
 pDocumentRevision = do
-  vprefix <- A.option False (True <$ char 'v')
-  version <- A.takeWhile1 (\c -> not (A.isEndOfLine c) && c /= ',')
-  date <- optional (T.strip <$> (char ',' *> A.space
-               *> A.takeWhile1 (\c -> not (A.isEndOfLine c) && c /= ':')))
+  vprefix <- option False (True <$ vchar 'v')
+  version <- takeWhile1 (\c -> not (isEndOfLine c) && c /= ',')
+  date <- optional (T.strip <$> (vchar ',' *> space
+               *> takeWhile1 (\c -> not (isEndOfLine c) && c /= ':')))
   remark <- optional
-            (T.strip <$> (char ':' *>  A.space *> A.takeWhile (not . A.isEndOfLine)))
-  A.endOfLine
+            (T.strip <$> (vchar ':' *>  space *> takeWhile (not . isEndOfLine)))
+  endOfLine
   when (isNothing date && isNothing remark) $ guard vprefix
   pure  Revision { revVersion = version
                  , revDate = date
@@ -186,17 +280,17 @@ pDocumentRevision = do
                  }
 
 pLine :: P Text
-pLine = A.takeWhile (not . A.isEndOfLine) <* (A.endOfLine <|> A.endOfInput)
+pLine = takeWhile (not . isEndOfLine) <* (endOfLine <|> endOfInput)
 
 
 -- Left key unsets key
 -- Right (key, val) sets key
 pDocAttribute :: P (Either Text (Text, Text))
 pDocAttribute = do
-  char ':'
-  unset <- A.option False $ True <$ char '!'
+  vchar ':'
+  unset <- option False $ True <$ vchar '!'
   k <- pDocAttributeName
-  char ':'
+  vchar ':'
   v <- pLineWithEscapes
   pure $ if unset
             then Left k
@@ -204,16 +298,16 @@ pDocAttribute = do
 
 pDocAttributeName :: P Text
 pDocAttributeName = do
-  c <- A.satisfy (\d -> isAscii d && (isAlphaNum d || d == '_'))
+  c <- satisfy (\d -> isAscii d && (isAlphaNum d || d == '_'))
   cs <- many $
-          A.satisfy (\d -> isAscii d && (isAlphaNum d || d == '_' || d == '-'))
+          satisfy (\d -> isAscii d && (isAlphaNum d || d == '_' || d == '-'))
   pure $ T.pack (c:cs)
 
 pLineWithEscapes :: P Text
 pLineWithEscapes = do
-  _ <- A.takeWhile (== ' ')
-  t <- A.takeWhile isLineEndChar
-  A.endOfLine
+  _ <- takeWhile (== ' ')
+  t <- takeWhile isLineEndChar
+  endOfLine
   case T.stripSuffix "\\" t of
     Nothing -> pure t
     Just t' -> do
@@ -229,29 +323,34 @@ isLineEndChar _ = True
 skipBlankLines :: [BlockContext] -> P ()
 skipBlankLines blockContexts =
   case blockContexts of
-    ListContext{} : _ -> void $ many $ char '+' *> pBlankLine
+    ListContext{} : _ -> void $ many $ vchar '+' *> pBlankLine
     _ -> void $ many pBlankLine
 
 pBlankLine :: P ()
-pBlankLine = A.takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> A.endOfLine)
+pBlankLine = takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> endOfLine)
 
 parseBlocks :: Text -> P [Block]
-parseBlocks t =
-  either fail pure $ A.parseOnly (many (pBlock [])) (T.strip t <> "\n")
+parseBlocks t = do
+  fp <- ask
+  either (fail . errorMessage) pure $
+    parse (many (pBlock [])) fp (T.strip t <> "\n")
 
 parseParagraphs :: Text -> P [Block]
-parseParagraphs t =
-  either fail pure $ A.parseOnly (many pParagraph) (T.strip t <> "\n")
+parseParagraphs t = do
+  fp <- ask
+  either (fail . errorMessage) pure $
+    parse (many pParagraph) fp (T.strip t <> "\n")
  where
   pParagraph = do
     skipBlankLines []
     (mbtitle, attr@(Attr _ kvs)) <- pTitlesAndAttributes
     let hardbreaks = M.lookup "options" kvs == Just "hardbreaks"
-    A.skipMany (pCommentBlock attr)
+    skipMany (pCommentBlock attr)
     Block attr mbtitle <$> pPara [] hardbreaks
 
 parseInlines :: Text -> [Inline]
-parseInlines t = fromRight mempty $ A.parseOnly pInlines (T.strip t)
+parseInlines t = do
+  fromRight mempty $ parse pInlines "" (T.strip t)
 
 pBlock :: [BlockContext] -> P Block
 pBlock blockContexts = do
@@ -264,9 +363,9 @@ pBlock blockContexts = do
                             (DelimitedContext _ _ True : _) -> True
                             _ -> False
   case blockContexts of
-    ListContext{} : _ -> A.skipWhile (== ' ')
+    ListContext{} : _ -> skipWhile (== ' ')
     _ -> pure ()
-  A.skipMany (pCommentBlock attr)
+  skipMany (pCommentBlock attr)
   pBlockMacro mbtitle attr
     <|> pDiscreteHeading mbtitle attr
     <|> pExampleBlock mbtitle attr
@@ -280,7 +379,7 @@ pBlock blockContexts = do
     <|> pOpenBlock mbtitle attr
     <|> pTable mbtitle attr
     <|> Block attr mbtitle <$>
-          A.choice
+          choice
             [ pSection blockContexts
             , pThematicBreak
             , pPageBreak
@@ -301,19 +400,19 @@ pIndentedLiteral = do
 
 pIndentedLine :: P (Int, Text)
 pIndentedLine = do
-  ind <- length <$> some (char ' ')
+  ind <- length <$> some (vchar ' ')
   t <- pLine
   pure (ind, t)
 
 pPageBreak :: P BlockType
-pPageBreak = PageBreak <$ (A.string "<<<" <* pBlankLine)
+pPageBreak = PageBreak <$ (string "<<<" <* pBlankLine)
 
 pThematicBreak :: P BlockType
 pThematicBreak = ThematicBreak <$
   (pThematicBreakAsciidoc <|> pThematicBreakMarkdown '-' <|> pThematicBreakMarkdown '*')
  where
-   pThematicBreakAsciidoc = A.string "'''" *> pBlankLine
-   pThematicBreakMarkdown c = A.count 3 (char c *> many (char ' ')) *> pBlankLine
+   pThematicBreakAsciidoc = string "'''" *> pBlankLine
+   pThematicBreakMarkdown c = count 3 (vchar c *> many (vchar ' ')) *> pBlankLine
 
 pCommentBlock :: Attr -> P ()
 pCommentBlock attr = pDelimitedCommentBlock <|> pAlternateCommentBlock
@@ -323,7 +422,7 @@ pCommentBlock attr = pDelimitedCommentBlock <|> pAlternateCommentBlock
     case attr of
       Attr ["comment"] _ ->
         void (pDelimitedLiteralBlock '-' 2) <|>
-                void (A.match (pPara [SectionContext (-1)] False))
+                void (match (pPara [SectionContext (-1)] False))
       _ -> mzero
 
 pBlockMacro :: Maybe BlockTitle -> Attr -> P Block
@@ -333,11 +432,11 @@ pBlockMacro mbtitle attr = do
 
 pBlockMacro' :: P (Text, Text)
 pBlockMacro' = do
-  name <- A.choice (map (\n -> A.string n <* A.string "::") (M.keys blockMacros))
+  name <- choice (map (\n -> string n <* string "::") (M.keys blockMacros))
   let targetChars = mconcat <$> some
-        (A.takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
+        (takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
          <|>
-         (char '\\' *> (T.singleton <$> A.satisfy (\c -> c == '[' || c == '+')))
+         (vchar '\\' *> (T.singleton <$> satisfy (\c -> c == '[' || c == '+')))
          <|>
          (do Inline _ (Str t) <- pInMatched False '+' mempty Str
              pure t))
@@ -381,9 +480,9 @@ blockMacros = M.fromList
 
 pSection :: [BlockContext] -> P BlockType
 pSection blockContexts@(SectionContext sectionLevel : _) = do
-  lev <- (\x -> length x - 1) <$> (some (char '=') <|> some (char '#'))
+  lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
   guard (lev > sectionLevel && lev >= 0 && lev <= 5)
-  char ' '
+  vchar ' '
   title <- parseInlines <$> pLine
   contents <- many (pBlock (SectionContext lev : blockContexts))
   -- note: we use sectionLevel, not lev, so in improperly nested content, e.g.,
@@ -400,9 +499,9 @@ pDiscreteHeading mbtitle attr = do
   guard $ case ps of
             ("discrete":_) -> True
             _ -> False
-  lev <- (\x -> length x - 1) <$> (some (char '=') <|> some (char '#'))
+  lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
   guard (lev >= 0 && lev <= 5)
-  char ' '
+  vchar ' '
   title <- parseInlines <$> pLine
   pure $ Block (Attr (drop 1 ps) kvs) mbtitle $ DiscreteHeading (Level lev) title
 
@@ -416,21 +515,21 @@ pTitlesAndAttributes = do
 pTitleOrAttribute :: P (Either BlockTitle Attr)
 pTitleOrAttribute =
   ((Left <$> pTitle)
-    <|> (Right <$> (pAnchor <* A.endOfLine))
-    <|> (Right <$> (pAttributes <* A.endOfLine))
-  ) <* A.skipMany pBlankLine
+    <|> (Right <$> (pAnchor <* endOfLine))
+    <|> (Right <$> (pAttributes <* endOfLine))
+  ) <* skipMany pBlankLine
 
 pAnchor :: P Attr
 pAnchor = do
-  void $ A.string "[["  -- [[anchor]] can set id
-  anchor <- A.takeWhile1 (\c -> not (A.isEndOfLine c || c == ']' || isSpace c))
-  void $ A.string "]]"
+  void $ string "[["  -- [[anchor]] can set id
+  anchor <- takeWhile1 (\c -> not (isEndOfLine c || c == ']' || isSpace c))
+  void $ string "]]"
   pure (Attr mempty (M.singleton "id" anchor))
 
 pTitle :: P BlockTitle
 pTitle = BlockTitle . parseInlines <$>
-           (do char '.'
-               mbc <- A.peekChar
+           (do vchar '.'
+               mbc <- peekChar
                guard $ case mbc of
                          Just ' ' -> False
                          Just '.' -> False
@@ -443,17 +542,17 @@ pDefinitionList blockContexts =
 
 pDefinitionListItem :: [BlockContext] -> P ([Inline],[Block])
 pDefinitionListItem blockContexts = do
-  let marker = (do t <- A.takeWhile1 (== ':')
+  let marker = (do t <- takeWhile1 (== ':')
                    case blockContexts of
                        ListContext ':' n : _ -> guard (T.length t == n + 2)
                        _ -> guard (T.length t == 2))
-  A.skipWhile (== ' ')
+  skipWhile (== ' ')
   term <- parseInlines . mconcat
-             <$> A.manyTill (A.takeWhile1 (\c -> not (A.isEndOfLine c || c == ':'))
-                              <|> A.takeWhile1 (==':')) marker
-  A.skipWhile (== ' ')
-  A.option () A.endOfLine
-  A.skipWhile (== ' ')
+             <$> manyTill (takeWhile1 (\c -> not (isEndOfLine c || c == ':'))
+                              <|> takeWhile1 (==':')) marker
+  skipWhile (== ' ')
+  option () endOfLine
+  skipWhile (== ' ')
   let newContext = case blockContexts of
                       ListContext ':' n : _ -> ListContext ':' (n + 1)
                       _ -> ListContext ':' 1
@@ -483,67 +582,67 @@ pList blockContexts = do
 
 pAnyListItemStart :: P (Char, Int, Maybe Int, Maybe CheckboxState)
 pAnyListItemStart = (do
-  A.skipWhile (== ' ')
-  c <- A.satisfy (\c -> c == '*' || c == '.' || c == '-' || c == '<')
+  skipWhile (== ' ')
+  c <- satisfy (\c -> c == '*' || c == '.' || c == '-' || c == '<')
   lev <- if c == '<'
             then pure 1
-            else (+ 1) . T.length <$> A.takeWhile (== c)
+            else (+ 1) . T.length <$> takeWhile (== c)
   when (c == '<') $ do  -- callout list <1> or <.>
-    void $ A.string "." <|> A.takeWhile1 isDigit
-    char '>'
-  char ' '
+    void $ string "." <|> takeWhile1 isDigit
+    vchar '>'
+  vchar ' '
   mbCheck <- if c == '-' || c == '*'
                 then optional pCheckbox
                 else pure Nothing
   pure (c, lev, Nothing, mbCheck))
- <|> (do d <- A.decimal
-         char '.'
-         char ' '
+ <|> (do d <- decimal
+         vchar '.'
+         vchar ' '
          pure ('1', 1, Just d, Nothing))
 
 
 pCheckbox :: P CheckboxState
 pCheckbox = do
-  A.skipWhile (==' ')
-  char '['
-  c <- A.char ' ' <|> A.char 'x' <|> A.char '*'
-  char ']'
-  char ' '
+  skipWhile (==' ')
+  vchar '['
+  c <- char ' ' <|> char 'x' <|> char '*'
+  vchar ']'
+  vchar ' '
   pure $ if c == ' '
             then Unchecked
             else Checked
 
 pListItemStart :: Char -> Int -> P ()
 pListItemStart c lev = do
-  A.skipWhile (== ' ')
+  skipWhile (== ' ')
   case c of
-    '<' -> char '<' *> (A.string "." <|> A.takeWhile1 isDigit) *> char '>'
+    '<' -> vchar '<' *> (string "." <|> takeWhile1 isDigit) *> vchar '>'
     '1' -> do guard (lev == 1)
-              void (A.decimal :: P Int)
-              char '.'
-    _ -> void $ A.count lev (char c)
-  char ' '
+              void (decimal :: P Int)
+              vchar '.'
+    _ -> void $ count lev (vchar c)
+  vchar ' '
 
 pListItem :: [BlockContext] -> P ListItem
 pListItem blockContexts = do
   mbCheckboxState <- optional pCheckbox
-  A.skipWhile (==' ')
+  skipWhile (==' ')
   bs <- many (pBlock blockContexts)
   pure $ ListItem mbCheckboxState bs
 
 pDelimitedLiteralBlock :: Char -> Int -> P [T.Text]
 pDelimitedLiteralBlock c minimumNumber = do
-  len <- length <$> some (char c) <* pBlankLine
+  len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
-  let endFence = A.count len (char c) *> pBlankLine
-  A.manyTill pLine endFence
+  let endFence = count len (vchar c) *> pBlankLine
+  manyTill pLine endFence
 
 pDelimitedBlock :: Char -> Int -> Bool -> P [Block]
 pDelimitedBlock c minimumNumber hardbreaks = do
-  len <- length <$> some (char c) <* pBlankLine
+  len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
-  let endFence = A.count len (char c) *> pBlankLine
-  A.manyTill (pBlock [DelimitedContext c len hardbreaks]) endFence
+  let endFence = count len (vchar c) *> pBlankLine
+  manyTill (pBlock [DelimitedContext c len hardbreaks]) endFence
 
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
 pPassBlock mbtitle attr = do
@@ -563,19 +662,19 @@ pLiteralBlock mbtitle attr =
   <|>
   case attr of
     Attr ("literal":ps) kvs -> do
-      t <- T.unlines <$> A.manyTill pLine (pBlankLine <|> A.endOfInput)
+      t <- T.unlines <$> manyTill pLine (pBlankLine <|> endOfInput)
       pure $ Block (Attr ps kvs) mbtitle $ LiteralBlock t
     _ -> mzero
 
 pFenced :: Maybe BlockTitle -> Attr -> P Block
 pFenced mbtitle attr = do
-  ticks <- A.takeWhile1 (== '`')
+  ticks <- takeWhile1 (== '`')
   guard $ T.length ticks >= 3
   lang' <- pLine
   let mblang = case T.strip lang' of
                  "" -> Nothing
                  l -> Just (Language l)
-  lns <- toSourceLines <$> A.manyTill pLine (A.string ticks)
+  lns <- toSourceLines <$> manyTill pLine (string ticks)
   pure $ Block attr mbtitle $ Listing mblang lns
 
 pListing :: Maybe BlockTitle -> Attr -> P Block
@@ -586,23 +685,24 @@ pListing mbtitle attr = (do
           Attr ["source"] kvs -> (Nothing, Attr [] kvs)
           _ -> (Nothing, attr)
   lns <- toSourceLines <$> pDelimitedLiteralBlock '-' 4
+  fp <- ask
   pure $ Block attr' mbtitle $
     case lns of
       [SourceLine x []] | "include::" `T.isPrefixOf` x
-          , Right ("include", target) <- A.parseOnly pBlockMacro' x
+          , Right ("include", target) <- parse pBlockMacro' fp x
           -> IncludeListing mbLang (T.unpack target) Nothing
       _ -> Listing mbLang lns)
  <|>
   (case attr of
     Attr ("listing":ps) kvs -> do
-      lns <- toSourceLines <$> A.manyTill pLine (pBlankLine <|> A.endOfInput)
+      lns <- toSourceLines <$> manyTill pLine (pBlankLine <|> endOfInput)
       pure $ Block (Attr ps kvs) mbtitle $ Listing Nothing lns
     Attr ("source":lang:ps) kvs -> do
-      lns <- toSourceLines <$> A.manyTill pLine (pBlankLine <|> A.endOfInput)
+      lns <- toSourceLines <$> manyTill pLine (pBlankLine <|> endOfInput)
       pure $ Block (Attr ps kvs) mbtitle
            $ Listing (Just (Language lang)) lns
     Attr ["source"] kvs -> do
-      lns <- toSourceLines <$> A.manyTill pLine (pBlankLine <|> A.endOfInput)
+      lns <- toSourceLines <$> manyTill pLine (pBlankLine <|> endOfInput)
       pure $ Block (Attr [] kvs) mbtitle $ Listing Nothing lns
     _ -> mzero)
 
@@ -731,9 +831,11 @@ newlinesToHardbreaks (x : xs) = x : newlinesToHardbreaks xs
 pNormalLine :: [BlockContext] -> P Text
 pNormalLine blockContexts = do
   t <- pLine
+  fp <- ask
   guard $ not $ T.all (\c -> c == ' ' || c == '\t') t
   guard $ T.take 1 t /= "[" ||
-          case A.parseOnly (pAttributes *> A.skipWhile isSpace *> A.endOfInput) t of
+          case parse (pAttributes *> skipWhile isSpace *> endOfInput)
+                     fp t of
                 Left _ -> True
                 _ -> False
   let t' = T.stripEnd t
@@ -744,7 +846,7 @@ pNormalLine blockContexts = do
     ListContext{} : _ -> do
       guard $ t' /= "+"
       guard $ not $ "::" `T.isInfixOf` t'
-      guard $ case A.parseOnly pAnyListItemStart (T.strip t) of
+      guard $ case parse pAnyListItemStart fp (T.strip t) of
                 Left _ -> True
                 _ -> False
     _ -> pure ()
@@ -755,11 +857,11 @@ pNormalLine blockContexts = do
 
 pTableBorder :: P TableSyntax
 pTableBorder = do
-  syntax <- (PSV <$ char '|') <|> (DSV <$ char ':') <|> (CSV <$ char ',')
-  void $ A.string "==="
-  A.skipWhile (=='=')
+  syntax <- (PSV <$ vchar '|') <|> (DSV <$ vchar ':') <|> (CSV <$ vchar ',')
+  void $ string "==="
+  skipWhile (=='=')
   pBlankLine
-  A.skipMany pBlankLine
+  skipMany pBlankLine
   pure syntax
 
 pTable :: Maybe BlockTitle -> Attr -> P Block
@@ -822,40 +924,41 @@ pTable mbtitle (Attr ps kvs) = do
   pure $ Block attr' mbtitle $ Table colspecs' mbHead bodyRows mbFoot
 
 parseColspecs :: T.Text -> P [ColumnSpec]
-parseColspecs t =
-  case A.parseOnly pColspecs t of
-    Left e -> fail e
+parseColspecs t = do
+  fp <- ask
+  case parse pColspecs fp t of
+    Left e -> fail $ errorMessage e
     Right cs -> pure cs
 
 pColspecs :: P [ColumnSpec]
-pColspecs = mconcat <$> A.sepBy pColspecPart pComma <* A.option () pComma
+pColspecs = mconcat <$> sepBy pColspecPart pComma <* option () pComma
 
 pColspecPart :: P [ColumnSpec]
 pColspecPart = do
-  multiplier <- A.option 1 pMultiplier
+  multiplier <- option 1 pMultiplier
   replicate multiplier <$> pColspec
 
 pMultiplier :: P Int
-pMultiplier = A.decimal <* char '*'
+pMultiplier = decimal <* vchar '*'
 
 pColspec :: P ColumnSpec
 pColspec = ColumnSpec <$> optional pHorizAlign
                       <*> optional pVertAlign
                       <*> (pWidth <|> pure Nothing)
-                      <*> (toCellStyle <$> A.satisfy (A.inClass "adehlms")
+                      <*> (toCellStyle <$> satisfy (A.inClass "adehlms")
                              <|> pure Nothing)
 
 pHorizAlign :: P HorizAlign
 pHorizAlign =
-  (AlignLeft <$ char '<') <|> (AlignCenter <$ char '^') <|> (AlignRight <$ char '>')
+  (AlignLeft <$ vchar '<') <|> (AlignCenter <$ vchar '^') <|> (AlignRight <$ vchar '>')
 
 pVertAlign :: P VertAlign
 pVertAlign = do
-  char '.'
-  (AlignTop <$ char '<') <|> (AlignMiddle <$ char '^') <|> (AlignBottom <$ char '>')
+  vchar '.'
+  (AlignTop <$ vchar '<') <|> (AlignMiddle <$ vchar '^') <|> (AlignBottom <$ vchar '>')
 
 pWidth :: P (Maybe Int)
-pWidth = (Just <$> (A.decimal <* A.option () (char '%'))) <|> (Nothing <$ char '~')
+pWidth = (Just <$> (decimal <* option () (vchar '%'))) <|> (Nothing <$ vchar '~')
 
 data TableSyntax =
     PSV
@@ -881,13 +984,13 @@ pTableRow opts mbcolspecs = TableRow <$>
                  getCell [] = pure []
                  getCell colspecs' = do
                    xs <- pTableCellPSV (tableSeparator opts) True colspecs'
-                   A.skipMany pBlankLine
+                   skipMany pBlankLine
                    (xs ++) <$> getCell (drop (sum (map cellColspan xs)) colspecs')
              in  getCell colspecs
          | otherwise -> mconcat <$>
                some (pTableCellPSV (tableSeparator opts)
                        False (repeat defaultColumnSpec))
-                     <* A.skipMany pBlankLine
+                     <* skipMany pBlankLine
        CSV -> pCSVTableRow (fromMaybe ',' $ tableSeparator opts) mbcolspecs
        TSV -> pCSVTableRow (fromMaybe '\t' $ tableSeparator opts) mbcolspecs
        DSV -> pDSVTableRow (fromMaybe ':' $ tableSeparator opts) mbcolspecs
@@ -902,35 +1005,35 @@ defaultColumnSpec = ColumnSpec Nothing Nothing Nothing Nothing
 pCSVTableRow :: Char -> Maybe [ColumnSpec] -> P [TableCell]
 pCSVTableRow delim mbcolspecs = do
   let colspecs = fromMaybe [] mbcolspecs
-  as <- A.sepBy (pCSVCell delim) (char delim)
-  pBlankLine *> A.skipMany pBlankLine
+  as <- sepBy (pCSVCell delim) (vchar delim)
+  pBlankLine *> skipMany pBlankLine
   zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
 
 pCSVCell :: Char -> P T.Text
 pCSVCell delim = do
-  A.skipWhile (== ' ')
-  mbc <- A.peekChar
+  skipWhile (== ' ')
+  mbc <- peekChar
   case mbc of
     Just '"'
-      -> char '"' *>
+      -> vchar '"' *>
           (T.pack <$>
-            A.manyTill (A.satisfy (/='"') <|> ('"' <$ A.string "\"\"")) (char '"'))
+            manyTill (satisfy (/='"') <|> ('"' <$ string "\"\"")) (vchar '"'))
     _ -> T.strip . T.replace "\"\"" "\"" <$>
-           A.takeWhile1 (\c -> c /= delim && not (A.isEndOfLine c))
+           takeWhile1 (\c -> c /= delim && not (isEndOfLine c))
 
 -- no "; escape delim with backslash
 pDSVTableRow:: Char -> Maybe [ColumnSpec] -> P [TableCell]
 pDSVTableRow delim mbcolspecs = do
   let colspecs = fromMaybe [] mbcolspecs
-  as <- A.sepBy (pDSVCell delim) (char delim)
-  pBlankLine *> A.skipMany pBlankLine
+  as <- sepBy (pDSVCell delim) (vchar delim)
+  pBlankLine *> skipMany pBlankLine
   zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
 
 pDSVCell :: Char -> P T.Text
 pDSVCell delim =
   T.strip . mconcat <$>
-    many (A.takeWhile1 (\c -> c /= delim && c /= '\\' && not (A.isEndOfLine c))
-       <|> (char '\\' *> ((\c -> "\\" <> T.singleton c) <$> A.anyChar)))
+    many (takeWhile1 (\c -> c /= delim && c /= '\\' && not (isEndOfLine c))
+       <|> (vchar '\\' *> ((\c -> "\\" <> T.singleton c) <$> anyChar)))
 
 toBasicCell :: T.Text -> ColumnSpec -> P TableCell
 toBasicCell t colspec = do
@@ -951,11 +1054,11 @@ pTableCellPSV mbsep allowNewlines colspecs = do
   t <- T.pack <$>
          many
           (notFollowedBy (void (pCellSep sep) <|> void pTableBorder) *>
-           ((char '\\' *> A.char sep)
-             <|> A.satisfy (not . A.isEndOfLine)
+           ((vchar '\\' *> char sep)
+             <|> satisfy (not . isEndOfLine)
              <|> if allowNewlines
-                    then A.satisfy A.isEndOfLine
-                    else A.satisfy A.isEndOfLine <* notFollowedBy (pCellSep sep)))
+                    then satisfy isEndOfLine
+                    else satisfy isEndOfLine <* notFollowedBy (pCellSep sep)))
   let cell' = TableCell
                { cellContent = []
                , cellHorizAlign = cHorizAlign cellData
@@ -979,12 +1082,13 @@ pTableCellPSV mbsep allowNewlines colspecs = do
 parseCellContents :: CellStyle -> T.Text -> P [Block]
 parseCellContents sty t =
   case sty of
-    AsciiDocStyle ->
+    AsciiDocStyle -> do
+      fp <- ask
       either (fail . show) (pure . docBlocks)
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
-       "table-cell"  -- TODO somehow get file path here
-        (t <> "\n"))
+       fp
+       (t <> "\n"))
     DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
     EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
@@ -1025,17 +1129,17 @@ toCellStyle _   = Nothing
 -- 2*.3+^.>s| duplicate 2x, rowspan 3, top align, right align, s style
 pCellSep :: Char -> P CellData
 pCellSep sep = do
-  mult <- A.option 1 pMultiplier
-  (colspan, rowspan) <- A.option (Nothing, Nothing) $ do
-    a <- optional A.decimal
-    b <- optional $ char '.' *> A.decimal
+  mult <- option 1 pMultiplier
+  (colspan, rowspan) <- option (Nothing, Nothing) $ do
+    a <- optional decimal
+    b <- optional $ vchar '.' *> decimal
     guard $ not (isNothing a && isNothing b)
-    char '+'
+    vchar '+'
     pure (a, b)
   halign <- optional pHorizAlign
   valign <- optional pVertAlign
-  sty <- (toCellStyle <$> A.satisfy (A.inClass "adehlms")) <|> pure Nothing
-  notFollowedBy pTableBorder <* char sep
+  sty <- (toCellStyle <$> satisfy (A.inClass "adehlms")) <|> pure Nothing
+  notFollowedBy pTableBorder <* vchar sep
   pure $ CellData
     { cDuplicate = mult
     , cHorizAlign = halign
@@ -1052,16 +1156,16 @@ pInlines :: P [Inline]
 pInlines = pInlines' []
 
 pComma :: P ()
-pComma = char ',' <* A.skipWhile isSpace
+pComma = vchar ',' <* skipWhile isSpace
 
 pFormattedTextAttributes :: P Attr
 pFormattedTextAttributes = do
-  char '['
+  vchar '['
   as <- pShorthandAttributes
-  ps <- A.option []
+  ps <- option []
          (do unless (as == mempty) pComma
-             A.sepBy1 pAttributeValue pComma <* A.option () pComma)
-  char ']'
+             sepBy1 pAttributeValue pComma <* option () pComma)
+  vchar ']'
   if as == mempty
      then
        case ps of
@@ -1071,12 +1175,12 @@ pFormattedTextAttributes = do
 
 pAttributes :: P Attr
 pAttributes = do
-  char '['
+  vchar '['
   as <- pShorthandAttributes
-  bs <- A.option []
+  bs <- option []
          (do unless (as == mempty) pComma
-             A.sepBy pAttribute pComma <* A.option () pComma)
-  char ']'
+             sepBy pAttribute pComma <* option () pComma)
+  vchar ']'
   let positional = lefts bs
   let kvs = rights bs
   pure $ as <> Attr positional (M.fromList kvs)
@@ -1085,11 +1189,11 @@ pAttribute :: P (Either Text (Text,Text))
 pAttribute = pKeyValue <|> pPositional
  where
    pKeyValue = do
-     k <- A.takeWhile1 (\c -> c /= ',' && c /= ']' && c /= '=')
-     char '=' *> (Right . (k,) <$> pAttributeValue)
+     k <- takeWhile1 (\c -> c /= ',' && c /= ']' && c /= '=')
+     vchar '=' *> (Right . (k,) <$> pAttributeValue)
    pPositional = do
      v <- pAttributeValue
-     mbc <- A.peekChar
+     mbc <- peekChar
      case mbc of
        Just ',' -> pure ()
        _ -> guard $ not $ T.null v
@@ -1098,11 +1202,11 @@ pAttribute = pKeyValue <|> pPositional
 pAttributeValue :: P Text
 pAttributeValue = pQuotedAttr <|> pBareAttributeValue
  where
-   pBareAttributeValue = T.strip <$> A.takeWhile (\c -> c /= ',' && c /= ']')
+   pBareAttributeValue = T.strip <$> takeWhile (\c -> c /= ',' && c /= ']')
    pQuotedAttr = do
-     char '"'
-     result <- many (A.satisfy (/='"') <|> (char '\\' *> A.satisfy (/='"')))
-     char '"'
+     vchar '"'
+     result <- many (satisfy (/='"') <|> (vchar '\\' *> satisfy (/='"')))
+     vchar '"'
      pure $ T.pack result
 
 pInlines' :: [Char] -> P [Inline]
@@ -1114,9 +1218,9 @@ pInlines' cs =
                    -> Inline (Attr ps kvs) (Highlight ils)
                  _ -> il'
       addStr . (il:) <$> pInlines' [])
-  <|> (do c <- A.anyChar
+  <|> (do c <- anyChar
           pInlines' (c:cs))
-  <|> (addStr [] <$ A.endOfInput)
+  <|> (addStr [] <$ endOfInput)
  where
   addStr = case cs of
               [] -> id
@@ -1142,16 +1246,16 @@ replaceChars (c:cs) = c:replaceChars cs
 pShorthandAttributes :: P Attr
 pShorthandAttributes = do
   attr <- mconcat <$>
-          many (A.skipWhile isSpace *>
+          many (skipWhile isSpace *>
                 (Attr [] . uncurry M.singleton <$> pShorthandAttribute))
-  A.skipWhile isSpace
+  skipWhile isSpace
   pure attr
 
 pShorthandAttribute :: P (Text,Text)
 pShorthandAttribute = do
   let isSpecial c = c == '.' || c == '#' || c == '%' || c == ']' || c ==','
-  c <- A.satisfy (\c -> c == '.' || c == '#' || c == '%')
-  val <- T.strip <$> A.takeWhile (not . isSpecial)
+  c <- satisfy (\c -> c == '.' || c == '#' || c == '%')
+  val <- T.strip <$> takeWhile (not . isSpecial)
   key <- case c of
            '.' -> pure "role"
            '#' -> pure "id"
@@ -1165,9 +1269,9 @@ pInline prevChars = do
                               (d:_) -> isSpace d || isPunctuation d
                               [] -> True
   let inMatched = pInMatched maybeUnconstrained
-  A.skipMany pLineComment
+  skipMany pLineComment
   (do attr <- pFormattedTextAttributes <|> pure mempty
-      c <- A.peekChar'
+      c <- peekChar'
       case c of
         '*' -> inMatched '*' attr (Bold . parseInlines)
         '_' -> inMatched '_' attr (Italic . parseInlines)
@@ -1180,7 +1284,7 @@ pInline prevChars = do
         '\'' -> pQuoted '\'' attr SingleQuoted
         '(' -> pIndexEntry attr
         _ -> mzero)
-     <|> (do c <- A.peekChar'
+     <|> (do c <- peekChar'
              case c of
                '\'' -> pApostrophe '\''
                '+' -> pHardBreak
@@ -1194,26 +1298,26 @@ pInline prevChars = do
 
 pIndexEntry :: Attr -> P Inline
 pIndexEntry attr = do
-  void $ A.string "(("
-  concealed <- A.option False $ True <$ char '('
-  terms <- A.takeWhile1 (/= ')')
+  void $ string "(("
+  concealed <- option False $ True <$ vchar '('
+  terms <- takeWhile1 (/= ')')
   Inline attr <$>
     if concealed
        then IndexEntry (TermConcealed (map T.strip (T.split (==',') terms)))
-                         <$ A.string ")))"
-       else IndexEntry (TermInText terms) <$ A.string "))"
+                         <$ string ")))"
+       else IndexEntry (TermInText terms) <$ string "))"
 
 pTriplePassthrough :: P Inline
 pTriplePassthrough = Inline mempty . Passthrough . T.pack
-    <$> (A.string "+++" *> A.manyTill A.anyChar (A.string "+++"))
+    <$> (string "+++" *> manyTill anyChar (string "+++"))
 
 pLineComment :: P ()
-pLineComment = A.string "//" *> A.skipWhile (== ' ') *> void pLine
+pLineComment = string "//" *> skipWhile (== ' ') *> void pLine
 
 pCrossReference :: P Inline
 pCrossReference = do
-  void $ A.string "<<"
-  t <- T.pack <$> A.manyTill (A.satisfy (not . A.isEndOfLine)) (void (A.string ">>"))
+  void $ string "<<"
+  t <- T.pack <$> manyTill (satisfy (not . isEndOfLine)) (void (string ">>"))
   let ts = T.split (==',') t
   case ts of
     [] -> mzero
@@ -1227,24 +1331,24 @@ data MatchState = Backslash | OneDelim | Regular
 -- used for super/subscript, which can't accept spaces but take single delims
 pInSingleMatched :: Char -> Attr -> (Text -> InlineType) -> P Inline
 pInSingleMatched delim attr toInlineType = do
-  char delim
-  cs <- A.manyTill (A.satisfy (not . isSpace)) (char delim)
+  vchar delim
+  cs <- manyTill (satisfy (not . isSpace)) (vchar delim)
   guard $ not $ null cs
   pure $ Inline attr (toInlineType (T.pack cs))
 
 pInMatched :: Bool -> Char -> Attr -> (Text -> InlineType) -> P Inline
 pInMatched maybeUnconstrained delim attr toInlineType = do
-  char delim
-  isDoubled <- A.option False (True <$ char delim)
-  followedBySpace <- maybe True isSpace <$> A.peekChar
+  vchar delim
+  isDoubled <- option False (True <$ vchar delim)
+  followedBySpace <- maybe True isSpace <$> peekChar
   guard $ isDoubled || (maybeUnconstrained && not followedBySpace)
-  cs <- A.manyTill ( (char '\\' *> A.char delim) <|> A.anyChar )
+  cs <- manyTill ( (vchar '\\' *> char delim) <|> anyChar )
                    (if isDoubled
-                       then char delim *> char delim
-                       else char delim)
+                       then vchar delim *> vchar delim
+                       else vchar delim)
   guard $ not $ null cs
   when (not isDoubled && maybeUnconstrained) $ do
-    mbc <- A.peekChar
+    mbc <- peekChar
     case mbc of
       Nothing -> pure ()
       Just c -> guard $ isSpace c || isPunctuation c
@@ -1252,8 +1356,8 @@ pInMatched maybeUnconstrained delim attr toInlineType = do
 
 pInlineAnchor :: P Inline
 pInlineAnchor = do
-  void $ A.string "[["
-  contents <- T.pack <$> A.manyTill A.anyChar (A.string "]]")
+  void $ string "[["
+  contents <- T.pack <$> manyTill anyChar (string "]]")
   let (anchorId, xrefLabel) =
         case T.split (==',') contents of
           [] -> (mempty, mempty)
@@ -1262,55 +1366,55 @@ pInlineAnchor = do
 
 pBibAnchor :: P Inline
 pBibAnchor = do
-  void $ A.string "[[["
-  contents <- T.pack <$> A.manyTill A.anyChar (A.string "]]]")
+  void $ string "[[["
+  contents <- T.pack <$> manyTill anyChar (string "]]]")
   let (anchorId, xrefLabel) =
         case T.split (==',') contents of
           [] -> (mempty, mempty)
           (x:ys) -> (x, mconcat ys)
-  A.skipWhile (== ' ')
+  skipWhile (== ' ')
   pure $ Inline mempty $ BibliographyAnchor anchorId (parseInlines xrefLabel)
 
 pCharacterReference :: P Inline
 pCharacterReference =
-  char '&' *> (pNumericCharacterReference <|> pCharacterEntityReference)
+  vchar '&' *> (pNumericCharacterReference <|> pCharacterEntityReference)
 
 pNumericCharacterReference :: P Inline
 pNumericCharacterReference =
-  char '#' *> (((char 'x' <|> char 'X') *> pHexReference) <|> pDecimalReference)
+  vchar '#' *> (((vchar 'x' <|> vchar 'X') *> pHexReference) <|> pDecimalReference)
  where
   pHexReference =
-    Inline mempty . Str . T.singleton . chr <$> (A.hexadecimal <* char ';')
+    Inline mempty . Str . T.singleton . chr <$> (hexadecimal <* vchar ';')
   pDecimalReference =
-    Inline mempty . Str . T.singleton . chr <$> (A.decimal <* char ';')
+    Inline mempty . Str . T.singleton . chr <$> (decimal <* vchar ';')
 
 pCharacterEntityReference :: P Inline
 pCharacterEntityReference = do
-  xs <- A.manyTill (A.satisfy isAlphaNum) (A.char ';' <|> A.space)
+  xs <- manyTill (satisfy isAlphaNum) (char ';' <|> space)
   case lookupNamedEntity xs of
     Just s -> pure $ Inline mempty (Str (T.pack s))
     Nothing -> mzero
 
 pQuoted :: Char -> Attr -> ([Inline] -> InlineType) -> P Inline
 pQuoted c attr constructor = do
-  char c
+  vchar c
   result <- pInMatched True '`' attr (constructor . parseInlines)
-  char c
+  vchar c
   return result
 
 pApostrophe :: Char -> P Inline
-pApostrophe '`' = Inline mempty (Str "’") <$ A.string "`'"
+pApostrophe '`' = Inline mempty (Str "’") <$ string "`'"
 pApostrophe _ = mzero
 
 pInlineMacro :: P Inline
 pInlineMacro = do
-  name <- A.choice (map (\n -> A.string n <* char ':') (M.keys inlineMacros))
+  name <- choice (map (\n -> string n <* vchar ':') (M.keys inlineMacros))
   let targetChars = mconcat <$> some
-       ( (A.string "pass:" *> char '[' *> A.takeWhile1 (/=']') <* char ']')
+       ( (string "pass:" *> vchar '[' *> takeWhile1 (/=']') <* vchar ']')
          <|>
-         A.takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
+         takeWhile1 (\c -> not (isSpace c) && c /= '[' && c /= '+')
          <|>
-         (char '\\' *> (T.singleton <$> A.satisfy (\c -> c == '[' || c == '+')))
+         (vchar '\\' *> (T.singleton <$> satisfy (\c -> c == '[' || c == '+')))
          <|>
         (do Inline _ (Str t) <- pInMatched False '+' mempty Str
             pure t)
@@ -1413,13 +1517,13 @@ inlineMacros = M.fromList
 
 pBracketedText :: P Text
 pBracketedText =
-  char '[' *>
+  vchar '[' *>
     (mconcat <$> many
-         (T.pack <$> some ((char '\\' *> A.char ']') <|>
-                 A.satisfy (\c -> c /= ']' && not (A.isEndOfLine c)) <|>
-                 (' ' <$ (char '\\' <* A.endOfLine)))
+         (T.pack <$> some ((vchar '\\' *> char ']') <|>
+                 satisfy (\c -> c /= ']' && not (isEndOfLine c)) <|>
+                 (' ' <$ (vchar '\\' <* endOfLine)))
           <|> ((\x -> "[" <> x <> "]") <$> pBracketedText)))
-    <* char ']'
+    <* vchar ']'
 
 extractDescription :: Attr -> (Text, Attr)
 extractDescription (Attr ps kvs) =
@@ -1431,11 +1535,11 @@ extractDescription (Attr ps kvs) =
 
 pEmailAutolink :: P Inline
 pEmailAutolink = do
-  a <- A.takeWhile1 (\c -> isAlphaNum c || c == '_' || c == '.' || c == '+')
-  char '@'
-  b <- A.takeWhile1 isLetter
-  char '.'
-  c <- A.takeWhile1 isLetter
+  a <- takeWhile1 (\c -> isAlphaNum c || c == '_' || c == '.' || c == '+')
+  vchar '@'
+  b <- takeWhile1 isLetter
+  vchar '.'
+  c <- takeWhile1 isLetter
   guard $ let lc = T.length c in lc >= 2 && lc <= 5
   let email = a <> "@" <> b <> "." <> c
   attr <- pAttributes <|> pure mempty
@@ -1447,7 +1551,7 @@ pEmailAutolink = do
 
 pAutolink :: P Inline
 pAutolink = do
-  scheme <- A.choice (map A.string
+  scheme <- choice (map string
                ["http:", "https:", "irc:", "ftp:", "mailto:"])
   let isSpecialPunct ',' = True
       isSpecialPunct '.' = True
@@ -1458,10 +1562,10 @@ pAutolink = do
       isSpecialPunct ')' = True
       isSpecialPunct _ = False
   let urlChunk = T.pack <$>
-        some (A.satisfy (\c -> not (isSpace c) && c /= '[' && c /= '>'
+        some (satisfy (\c -> not (isSpace c) && c /= '[' && c /= '>'
                                && not (isSpecialPunct c))
-             <|> (do c <- A.satisfy isSpecialPunct
-                     mbd <- A.peekChar
+             <|> (do c <- satisfy isSpecialPunct
+                     mbd <- peekChar
                      case mbd of
                        Nothing -> mzero
                        Just d | isSpace d || isSpecialPunct d -> mzero
@@ -1477,21 +1581,21 @@ pAutolink = do
                                  else parseInlines description)
 
 pBracedAutolink :: P Inline
-pBracedAutolink = char '<' *> pAutolink <* char '>'
+pBracedAutolink = vchar '<' *> pAutolink <* vchar '>'
 
 pEscape :: P Inline
 pEscape =
   -- we allow letters to be escaped to handle escapes of macros
   -- though this also leads to differences from asciidoc
-  char '\\' *>
+  vchar '\\' *>
    (Inline mempty . Str . T.singleton <$>
-      A.satisfy (\c -> isPunctuation c || isLetter c))
+      satisfy (\c -> isPunctuation c || isLetter c))
 
 pAttributeReference :: P Inline
 pAttributeReference = do
-  char '{'
+  vchar '{'
   name <- pDocAttributeName
-  char '}'
+  vchar '}'
   case M.lookup name replacements of
     Just r -> pure $ Inline mempty (Str r)
     Nothing -> pure $ Inline mempty $ AttributeReference (AttributeName name)
@@ -1532,8 +1636,8 @@ replacements = M.fromList
 
 pHardBreak :: P Inline
 pHardBreak = do
-  char '+'
-  _ <- A.takeWhile1 (\c -> c == '\r' || c == '\n')
+  vchar '+'
+  _ <- takeWhile1 (\c -> c == '\r' || c == '\n')
   pure $ Inline mempty HardBreak
 
 --- Utility functions:
