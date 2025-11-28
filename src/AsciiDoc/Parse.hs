@@ -29,7 +29,6 @@ import Control.Monad.Reader
 import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit)
 import AsciiDoc.AST
 import AsciiDoc.Generic
-import GHC.Bits (Bits)
 -- import Debug.Trace
 
 -- | Parse a complete AsciiDoc document
@@ -151,9 +150,6 @@ string = liftP . A.string
 
 decimal :: Integral a => P a
 decimal = liftP A.decimal
-
-hexadecimal :: (Integral a, Bits a) => P a
-hexadecimal = liftP A.hexadecimal
 
 endOfInput :: P ()
 endOfInput = liftP A.endOfInput
@@ -1383,7 +1379,7 @@ pNumericCharacterReference =
   vchar '#' *> (((vchar 'x' <|> vchar 'X') *> pHexReference) <|> pDecimalReference)
  where
   pHexReference =
-    Inline mempty . Str . T.singleton . chr <$> (hexadecimal <* vchar ';')
+    Inline mempty . Str . T.singleton . chr <$> (liftP A.hexadecimal <* vchar ';')
   pDecimalReference =
     Inline mempty . Str . T.singleton . chr <$> (decimal <* vchar ';')
 
