@@ -100,20 +100,30 @@ newtype P a = P { unP :: ReaderT ParserConfig A.Parser a }
   deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
             MonadFail, MonadReader ParserConfig)
 
-data ParserConfig = ParserConfig { filePath :: FilePath }
-                    deriving (Show)
+data ParserConfig = ParserConfig
+                    { filePath :: FilePath
+                    , blockContexts :: [BlockContext]
+                    } deriving (Show)
 
 data ParseError = ParseError { errorPosition :: Int
                              , errorMessage :: String
-                             }
-                  deriving (Show)
+                             } deriving (Show)
 
 parse :: P a -> FilePath -> T.Text -> Either ParseError a
-parse p fp t = go $ A.parse (runReaderT (unP p) ParserConfig{ filePath = fp }) t
+parse p fp t = go $ A.parse (runReaderT (unP p)
+                             ParserConfig{ filePath = fp
+                                         , blockContexts = []}) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
   go (A.Done _i r) = Right r
+
+localP :: (ParserConfig -> ParserConfig) -> P a -> P a
+localP f (P p) = P (local f p)
+
+withBlockContext :: BlockContext -> P a -> P a
+withBlockContext bc =
+  localP (\conf -> conf{ blockContexts = bc : blockContexts conf })
 
 liftP :: A.Parser a -> P a
 liftP = P . lift
@@ -204,7 +214,7 @@ pDocument = do
   let minSectionLevel = case M.lookup "doctype" (docAttributes meta) of
                           Just "book" -> 0
                           _ -> 1
-  bs <- many (pBlock [SectionContext (minSectionLevel - 1)])
+  bs <- withBlockContext (SectionContext (minSectionLevel - 1)) (many pBlock)
   skipWhile isSpace
   endOfInput
   pure $ Document { docMeta = meta , docBlocks = bs }
@@ -214,9 +224,9 @@ pDocumentHeader = do
   let handleAttr m (Left k) = M.delete k m
       handleAttr m (Right (k,v)) = M.insert k v m
   let defaultDocAttrs = M.insert "sectids" "" mempty
-  skipBlankLines []
+  skipBlankLines
   topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
-  skipBlankLines []
+  skipBlankLines
   (title, titleAttr) <- option ([], Nothing) $ do
     (_,titleAttr) <- pTitlesAndAttributes
     title <- pDocumentTitle
@@ -318,9 +328,10 @@ isLineEndChar '\r' = False
 isLineEndChar '\n' = False
 isLineEndChar _ = True
 
-skipBlankLines :: [BlockContext] -> P ()
-skipBlankLines blockContexts =
-  case blockContexts of
+skipBlankLines :: P ()
+skipBlankLines = do
+  contexts <- asks blockContexts
+  case contexts of
     ListContext{} : _ -> void $ many $ vchar '+' *> pBlankLine
     _ -> void $ many pBlankLine
 
@@ -333,33 +344,34 @@ parseWith p t = do
   either (fail . errorMessage) pure $ parse p fp t
 
 parseBlocks :: Text -> P [Block]
-parseBlocks = parseWith (many (pBlock [])) . (<> "\n") . T.strip
+parseBlocks = parseWith (many pBlock) . (<> "\n") . T.strip
 
 parseParagraphs :: Text -> P [Block]
 parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
  where
   pParagraph = do
-    skipBlankLines []
+    skipBlankLines
     (mbtitle, attr@(Attr _ kvs)) <- pTitlesAndAttributes
     let hardbreaks = M.lookup "options" kvs == Just "hardbreaks"
     skipMany (pCommentBlock attr)
-    Block attr mbtitle <$> pPara [] hardbreaks
+    Block attr mbtitle <$> pPara hardbreaks
 
 parseInlines :: Text -> [Inline]
 parseInlines t = do
   fromRight mempty $ parse pInlines "" (T.strip t)
 
-pBlock :: [BlockContext] -> P Block
-pBlock blockContexts = do
-  skipBlankLines blockContexts
+pBlock :: P Block
+pBlock = do
+  contexts <- asks blockContexts
+  skipBlankLines
   (mbtitle, attr) <- pTitlesAndAttributes
   let hardbreaks = case attr of
                      (Attr _ kvs) |
                        Just "hardbreaks" <- M.lookup "options" kvs -> True
-                     _ -> case blockContexts of
+                     _ -> case contexts of
                             (DelimitedContext _ _ True : _) -> True
                             _ -> False
-  case blockContexts of
+  case contexts of
     ListContext{} : _ -> skipWhile (== ' ')
     _ -> pure ()
   skipMany (pCommentBlock attr)
@@ -377,13 +389,13 @@ pBlock blockContexts = do
     <|> pTable mbtitle attr
     <|> Block attr mbtitle <$>
           choice
-            [ pSection blockContexts
+            [ pSection
             , pThematicBreak
             , pPageBreak
-            , pList blockContexts
-            , pDefinitionList blockContexts
+            , pList
+            , pDefinitionList
             , pIndentedLiteral
-            , pPara blockContexts hardbreaks
+            , pPara hardbreaks
             ]
 
 
@@ -419,7 +431,7 @@ pCommentBlock attr = pDelimitedCommentBlock <|> pAlternateCommentBlock
     case attr of
       Attr ["comment"] _ ->
         void (pDelimitedLiteralBlock '-' 2) <|>
-                void (match (pPara [SectionContext (-1)] False))
+                void (match (withBlockContext (SectionContext (-1)) (pPara False)))
       _ -> mzero
 
 pBlockMacro :: Maybe BlockTitle -> Attr -> P Block
@@ -477,20 +489,23 @@ blockMacros = M.fromList
         pure $ Block (attr' <> attr) mbtitle $ Include path Nothing)
   ]
 
-pSection :: [BlockContext] -> P BlockType
-pSection blockContexts@(SectionContext sectionLevel : _) = do
-  lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
-  guard (lev > sectionLevel && lev >= 0 && lev <= 5)
-  vchar ' '
-  title <- parseInlines <$> pLine
-  contents <- many (pBlock (SectionContext lev : blockContexts))
-  -- note: we use sectionLevel, not lev, so in improperly nested content, e.g.,
-  -- == foo
-  -- ==== bar
-  -- ==== baz
-  -- bar is a level-3 section and will contain baz!
-  pure $ Section (Level (sectionLevel + 1)) title contents
-pSection _ = mzero
+pSection :: P BlockType
+pSection = do
+  contexts <- asks blockContexts
+  case contexts of
+    SectionContext sectionLevel : _ -> do
+      lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
+      guard (lev > sectionLevel && lev >= 0 && lev <= 5)
+      vchar ' '
+      title <- parseInlines <$> pLine
+      contents <- withBlockContext (SectionContext lev) $ many pBlock
+      -- note: we use sectionLevel, not lev, so in improperly nested content, e.g.,
+      -- == foo
+      -- ==== bar
+      -- ==== baz
+      -- bar is a level-3 section and will contain baz!
+      pure $ Section (Level (sectionLevel + 1)) title contents
+    _ -> mzero
 
 pDiscreteHeading :: Maybe BlockTitle -> Attr -> P Block
 pDiscreteHeading mbtitle attr = do
@@ -535,14 +550,15 @@ pTitle = BlockTitle . parseInlines <$>
                          _ -> True
                pLineWithEscapes)
 
-pDefinitionList :: [BlockContext] -> P BlockType
-pDefinitionList blockContexts =
-  DefinitionList <$> some (pDefinitionListItem blockContexts)
+pDefinitionList :: P BlockType
+pDefinitionList =
+  DefinitionList <$> some pDefinitionListItem
 
-pDefinitionListItem :: [BlockContext] -> P ([Inline],[Block])
-pDefinitionListItem blockContexts = do
+pDefinitionListItem :: P ([Inline],[Block])
+pDefinitionListItem = do
+  contexts <- asks blockContexts
   let marker = (do t <- takeWhile1 (== ':')
-                   case blockContexts of
+                   case contexts of
                        ListContext ':' n : _ -> guard (T.length t == n + 2)
                        _ -> guard (T.length t == 2))
   skipWhile (== ' ')
@@ -552,24 +568,24 @@ pDefinitionListItem blockContexts = do
   skipWhile (== ' ')
   option () endOfLine
   skipWhile (== ' ')
-  let newContext = case blockContexts of
+  let newContext = case contexts of
                       ListContext ':' n : _ -> ListContext ':' (n + 1)
                       _ -> ListContext ':' 1
-  defn <- many (pBlock (newContext:blockContexts))
+  defn <- withBlockContext newContext (many pBlock)
   void $ many pBlankLine
   pure (term, defn)
 
-pList :: [BlockContext] -> P BlockType
-pList blockContexts = do
+pList :: P BlockType
+pList = do
   (c, lev, mbStart, mbCheckboxState) <- pAnyListItemStart
   let guardContext ctx =
        case ctx of
          ListContext c' lev' -> guard $ c /= c' || lev > lev'
          _ -> pure ()
-  mapM_ guardContext blockContexts
-  ListItem _ bs <- pListItem (ListContext c lev : blockContexts)
+  asks blockContexts >>= mapM_ guardContext
+  ListItem _ bs <- withBlockContext (ListContext c lev) pListItem
   let x = ListItem mbCheckboxState bs
-  xs <- many (pListItemStart c lev *> pListItem (ListContext c lev : blockContexts))
+  xs <- many (pListItemStart c lev *> withBlockContext (ListContext c lev) pListItem)
   let listType
         | c == '-'
         , Just _ <- mbCheckboxState
@@ -622,11 +638,11 @@ pListItemStart c lev = do
     _ -> void $ count lev (vchar c)
   vchar ' '
 
-pListItem :: [BlockContext] -> P ListItem
-pListItem blockContexts = do
+pListItem :: P ListItem
+pListItem = do
   mbCheckboxState <- optional pCheckbox
   skipWhile (==' ')
-  bs <- many (pBlock blockContexts)
+  bs <- many pBlock
   pure $ ListItem mbCheckboxState bs
 
 pDelimitedLiteralBlock :: Char -> Int -> P [T.Text]
@@ -641,7 +657,8 @@ pDelimitedBlock c minimumNumber hardbreaks = do
   len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
   let endFence = count len (vchar c) *> pBlankLine
-  manyTill (pBlock [DelimitedContext c len hardbreaks]) endFence
+  withBlockContext (DelimitedContext c len hardbreaks) $
+    manyTill pBlock endFence
 
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
 pPassBlock mbtitle attr = do
@@ -755,7 +772,7 @@ pVerse mbtitle (Attr ("verse":xs) kvs) = do
                          else Just (Attribution attribution)
   bs <- pDelimitedBlock '-' 2 True
        <|> pDelimitedBlock '_' 4 True
-       <|> ((:[]) . Block mempty Nothing <$> pPara [] True)
+       <|> ((:[]) . Block mempty Nothing <$> pPara True)
   pure $ Block (Attr [] kvs) mbtitle $ Verse mbAttribution bs
 pVerse _ _ = mzero
 
@@ -767,7 +784,7 @@ pQuoteBlock mbtitle (Attr ("quote":xs) kvs) = do
                          else Just (Attribution attribution)
   bs <- pDelimitedBlock '_' 4 True
        <|> pDelimitedBlock '-' 2 True
-       <|> ((:[]) . Block mempty Nothing <$> pPara [] False)
+       <|> ((:[]) . Block mempty Nothing <$> pPara False)
   pure $ Block (Attr [] kvs) mbtitle $ QuoteBlock mbAttribution bs
 pQuoteBlock _ _ = mzero
 
@@ -790,10 +807,11 @@ parseAdmonitionType t =
     _ -> Nothing
 
 -- parameter is true if hardbreaks option is set
-pPara :: [BlockContext] -> Bool -> P BlockType
-pPara blockContexts hardbreaks = do
-  t' <- pNormalLine blockContexts
-  case blockContexts of
+pPara :: Bool -> P BlockType
+pPara hardbreaks = do
+  t' <- pNormalLine
+  contexts <- asks blockContexts
+  case contexts of
     SectionContext{} : _ | not (T.null t') -> do
       case T.head t' of
         c | c == '=' || c == '#' -> do
@@ -811,7 +829,7 @@ pPara blockContexts hardbreaks = do
                  Just adm -> (newt, Just adm)
                  Nothing -> (t', Nothing)
           else (t', Nothing)
-  ts <- many (pNormalLine blockContexts)
+  ts <- many pNormalLine
   let ils = (if hardbreaks
                 then newlinesToHardbreaks
                 else id) $ parseInlines $ T.unlines (t:ts)
@@ -827,8 +845,8 @@ newlinesToHardbreaks (Inline attr (Str t) : xs) | T.any (=='\n') t =
     (map (Inline attr . Str) (T.lines t)) ++ newlinesToHardbreaks xs
 newlinesToHardbreaks (x : xs) = x : newlinesToHardbreaks xs
 
-pNormalLine :: [BlockContext] -> P Text
-pNormalLine blockContexts = do
+pNormalLine :: P Text
+pNormalLine = do
   t <- pLine
   fp <- asks filePath
   guard $ not $ T.all (\c -> c == ' ' || c == '\t') t
@@ -838,10 +856,11 @@ pNormalLine blockContexts = do
                 Left _ -> True
                 _ -> False
   let t' = T.stripEnd t
-  let delims = [(c, num) | DelimitedContext c num _ <- blockContexts]
+  contexts <- asks blockContexts
+  let delims = [(c, num) | DelimitedContext c num _ <- contexts]
   mapM_ (\(c, num) -> guard (not (T.all (== c) t' && T.length t' == num)))
         delims
-  case blockContexts of
+  case contexts of
     ListContext{} : _ -> do
       guard $ t' /= "+"
       guard $ not $ "::" `T.isInfixOf` t'
