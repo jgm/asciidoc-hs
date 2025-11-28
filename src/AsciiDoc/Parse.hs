@@ -1410,13 +1410,14 @@ inlineMacros = M.fromList
   ]
 
 pBracketedText :: P Text
-pBracketedText = do
-  char '['
-  cs <- many ((char '\\' *> A.char ']') <|>
-                    A.satisfy (\c -> c /= ']' && not (A.isEndOfLine c)) <|>
-                    (' ' <$ (char '\\' <* A.endOfLine)))
-  char ']'
-  pure $ T.pack cs
+pBracketedText =
+  char '[' *>
+    (mconcat <$> many
+         (T.pack <$> some ((char '\\' *> A.char ']') <|>
+                 A.satisfy (\c -> c /= ']' && not (A.isEndOfLine c)) <|>
+                 (' ' <$ (char '\\' <* A.endOfLine)))
+          <|> ((\x -> "[" <> x <> "]") <$> pBracketedText)))
+    <* char ']'
 
 extractDescription :: Attr -> (Text, Attr)
 extractDescription (Attr ps kvs) =
