@@ -39,7 +39,7 @@ parseDocument :: Monad m
               -> Text -- ^ Text to convert
               -> m Document
 parseDocument getFileContents raiseError path t =
-   handleResult (parse pDocument path t) >>= handleIncludes path
+   handleResult (parse pDocument path t) >>= handleIncludes
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
@@ -73,27 +73,26 @@ parseDocument getFileContents raiseError path t =
        Just x -> return $ Inline attr (Str x)
   goAttref _ il = return il
 
-  handleIncludes parentPath = mapBlocks (handleIncludeBlock parentPath)
+  handleIncludes = mapBlocks handleIncludeBlock
 
-  handleIncludeBlock parentPath (Block attr mbtitle (Include fp Nothing)) = do
-    let fp' = resolvePath parentPath fp
-    (do contents <- getFileContents fp'
-        Block attr mbtitle . Include fp' . Just . docBlocks <$>
-          handleResult (parse pDocument fp' contents))
-      >>= mapBlocks (handleIncludeBlock fp')
-  handleIncludeBlock parentPath (Block attr mbtitle
-                                  (IncludeListing mblang fp Nothing)) = do
-    let fp' = resolvePath parentPath fp
-    (do contents <- getFileContents fp'
-        pure $ Block attr mbtitle $ IncludeListing mblang fp'
+  handleIncludeBlock (Block attr mbtitle (Include fp Nothing)) =
+    (do contents <- getFileContents fp
+        Block attr mbtitle . Include fp . Just . docBlocks <$>
+          handleResult (parse pDocument fp contents))
+      >>= mapBlocks handleIncludeBlock
+  handleIncludeBlock (Block attr mbtitle
+                         (IncludeListing mblang fp Nothing)) =
+    (do contents <- getFileContents fp
+        pure $ Block attr mbtitle $ IncludeListing mblang fp
              $ Just (map (`SourceLine` []) (T.lines contents)))
-      >>= mapBlocks (handleIncludeBlock fp')
-  handleIncludeBlock _ x = pure x
+      >>= mapBlocks handleIncludeBlock
+  handleIncludeBlock x = pure x
 
-  resolvePath parentPath fp =
-    if isRelative fp
-       then takeDirectory parentPath </> fp
-       else fp
+-- | Make a relative path relative to a parent's directory. Leaves absolute paths alone.
+resolvePath :: FilePath -> FilePath -> FilePath
+resolvePath parentPath fp
+  | isRelative fp = takeDirectory parentPath </> fp
+  | otherwise = fp
 
 --- Wrapped parser type:
 
@@ -473,7 +472,9 @@ blockMacros = M.fromList
         pure $ Block (attr' <> attr) mbtitle TOC)
   , ("include", \mbtitle attr target -> do
         attr' <- pAttributes
-        pure $ Block (attr' <> attr) mbtitle $ Include (T.unpack target) Nothing)
+        fp <- asks filePath
+        let path = resolvePath fp (T.unpack target)
+        pure $ Block (attr' <> attr) mbtitle $ Include path Nothing)
   ]
 
 pSection :: [BlockContext] -> P BlockType
@@ -688,7 +689,7 @@ pListing mbtitle attr = (do
     case lns of
       [SourceLine x []] | "include::" `T.isPrefixOf` x
           , Right ("include", target) <- parse pBlockMacro' fp x
-          -> IncludeListing mbLang (T.unpack target) Nothing
+          -> IncludeListing mbLang (resolvePath fp (T.unpack target)) Nothing
       _ -> Listing mbLang lns)
  <|>
   (case attr of
