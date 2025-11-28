@@ -97,6 +97,8 @@ parseDocument getFileContents raiseError path t =
 
 type P = A.Parser
 
+--- Block parsing:
+
 data BlockContext =
     SectionContext Int
   | ListContext Char Int
@@ -288,297 +290,6 @@ pBlock blockContexts = do
             , pPara blockContexts hardbreaks
             ]
 
-pTableBorder :: P TableSyntax
-pTableBorder = do
-  syntax <- (PSV <$ char '|') <|> (DSV <$ char ':') <|> (CSV <$ char ',')
-  void $ A.string "==="
-  A.skipWhile (=='=')
-  pBlankLine
-  A.skipMany pBlankLine
-  pure syntax
-
-pTable :: Maybe BlockTitle -> Attr -> P Block
-pTable mbtitle (Attr ps kvs) = do
-  syntax' <- pTableBorder
-  mbcolspecs <- maybe (pure Nothing) (fmap Just . parseColspecs)
-                  (M.lookup "cols" kvs)
-  let options = maybe [] T.words $ M.lookup "options" kvs
-  let syntax = case M.lookup "format" kvs of
-                 Just "psv" -> PSV
-                 Just "csv" -> CSV
-                 Just "dsv" -> DSV
-                 Just "tsv" -> TSV
-                 _ -> syntax'
-  let mbsep = case M.lookup "separator" kvs of
-                 Just sep ->
-                   case T.uncons sep of
-                     Just (c,_) -> Just c
-                     _ -> Nothing
-                 _ -> Nothing
-  let tableOpts = TableOpts { tableSyntax = syntax
-                            , tableSeparator = mbsep
-                            , tableHeader = "header" `elem` options ||
-                                "noheader" `notElem` options
-                            , tableFooter = "footer" `elem` options ||
-                                "nofooter" `notElem` options
-                            }
-  let getRows mbspecs rowspans = (([],[]) <$ pTableBorder) <|>
-         do -- for this row, we modify the specs based on rowspans
-            -- if there are rowspans from rows above, we need to skip some:
-            let mbspecs' = case mbspecs of
-                             Nothing -> Nothing
-                             Just specs' -> Just [s | (s,0) <- zip specs' rowspans]
-            row@(TableRow cells) <- pTableRow tableOpts mbspecs'
-            let numcols = sum (map cellColspan cells)
-            let specs = fromMaybe (replicate numcols defaultColumnSpec) mbspecs
-            -- now, update rowspans in light of new row
-            let updateRowspans [] rs = rs
-                updateRowspans (c:cs) rs =
-                  map (+ (cellRowspan c - 1)) (take (cellColspan c) rs)
-                  ++ updateRowspans cs (drop (cellColspan c) rs)
-            let rowspans' = updateRowspans cells rowspans
-            (\(rows, colspecs') -> (row:rows, case rows of
-                                                 [] -> specs
-                                                 _ -> colspecs'))
-                                     <$> getRows (Just specs) rowspans'
-  (rows, colspecs') <- getRows mbcolspecs (repeat (0 :: Int))
-  let attr' = Attr ps $ M.delete "format" .
-                        M.delete "separator" .
-                        M.delete "cols" .
-                        M.delete "options" $ kvs
-  let (mbHead, rest)
-        | tableHeader tableOpts = (Just (take 1 rows), drop 1 rows)
-        | otherwise = (Nothing, rows)
-  let (mbFoot, bodyRows)
-        | tableFooter tableOpts
-        , not (null rest) = (Just (drop (length rest - 1) rest),
-                             take (length rest - 1) rest)
-        | otherwise = (Nothing, rest)
-  pure $ Block attr' mbtitle $ Table colspecs' mbHead bodyRows mbFoot
-
-parseColspecs :: T.Text -> P [ColumnSpec]
-parseColspecs t =
-  case A.parseOnly pColspecs t of
-    Left e -> fail e
-    Right cs -> pure cs
-
-pColspecs :: P [ColumnSpec]
-pColspecs = mconcat <$> A.sepBy pColspecPart pComma <* A.option () pComma
-
-pColspecPart :: P [ColumnSpec]
-pColspecPart = do
-  multiplier <- A.option 1 pMultiplier
-  replicate multiplier <$> pColspec
-
-pMultiplier :: P Int
-pMultiplier = A.decimal <* char '*'
-
-pColspec :: P ColumnSpec
-pColspec = ColumnSpec <$> optional pHorizAlign
-                      <*> optional pVertAlign
-                      <*> (pWidth <|> pure Nothing)
-                      <*> (toCellStyle <$> A.satisfy (A.inClass "adehlms")
-                             <|> pure Nothing)
-
-pHorizAlign :: P HorizAlign
-pHorizAlign =
-  (AlignLeft <$ char '<') <|> (AlignCenter <$ char '^') <|> (AlignRight <$ char '>')
-
-pVertAlign :: P VertAlign
-pVertAlign = do
-  char '.'
-  (AlignTop <$ char '<') <|> (AlignMiddle <$ char '^') <|> (AlignBottom <$ char '>')
-
-pWidth :: P (Maybe Int)
-pWidth = (Just <$> (A.decimal <* A.option () (char '%'))) <|> (Nothing <$ char '~')
-
-data TableSyntax =
-    PSV
-  | CSV
-  | TSV
-  | DSV
-  deriving (Show)
-
-data TableOpts =
-  TableOpts { tableSyntax :: TableSyntax
-            , tableSeparator :: Maybe Char
-            , tableHeader :: Bool
-            , tableFooter :: Bool
-            }
-  deriving (Show)
-
-pTableRow :: TableOpts -> Maybe [ColumnSpec] -> P TableRow
-pTableRow opts mbcolspecs = TableRow <$>
-  case tableSyntax opts of
-       PSV
-         | Just colspecs <- mbcolspecs  ->
-             let getCell :: [ColumnSpec] -> P [TableCell]
-                 getCell [] = pure []
-                 getCell colspecs' = do
-                   xs <- pTableCellPSV (tableSeparator opts) True colspecs'
-                   A.skipMany pBlankLine
-                   (xs ++) <$> getCell (drop (sum (map cellColspan xs)) colspecs')
-             in  getCell colspecs
-         | otherwise -> mconcat <$>
-               some (pTableCellPSV (tableSeparator opts)
-                       False (repeat defaultColumnSpec))
-                     <* A.skipMany pBlankLine
-       CSV -> pCSVTableRow (fromMaybe ',' $ tableSeparator opts) mbcolspecs
-       TSV -> pCSVTableRow (fromMaybe '\t' $ tableSeparator opts) mbcolspecs
-       DSV -> pDSVTableRow (fromMaybe ':' $ tableSeparator opts) mbcolspecs
-
-defaultColumnSpec :: ColumnSpec
-defaultColumnSpec = ColumnSpec Nothing Nothing Nothing Nothing
-
--- Note: AsciiDoc weirdly gobbles cells for rows even across CSV
--- row boundaries. We're not going to do that.
-
--- allows "; escape this as ""; delim can't be escaped
-pCSVTableRow :: Char -> Maybe [ColumnSpec] -> P [TableCell]
-pCSVTableRow delim mbcolspecs = do
-  let colspecs = fromMaybe [] mbcolspecs
-  as <- A.sepBy (pCSVCell delim) (char delim)
-  pBlankLine *> A.skipMany pBlankLine
-  zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
-
-pCSVCell :: Char -> P T.Text
-pCSVCell delim = do
-  A.skipWhile (== ' ')
-  mbc <- A.peekChar
-  case mbc of
-    Just '"'
-      -> char '"' *>
-          (T.pack <$>
-            A.manyTill (A.satisfy (/='"') <|> ('"' <$ A.string "\"\"")) (char '"'))
-    _ -> T.strip . T.replace "\"\"" "\"" <$>
-           A.takeWhile1 (\c -> c /= delim && not (A.isEndOfLine c))
-
--- no "; escape delim with backslash
-pDSVTableRow:: Char -> Maybe [ColumnSpec] -> P [TableCell]
-pDSVTableRow delim mbcolspecs = do
-  let colspecs = fromMaybe [] mbcolspecs
-  as <- A.sepBy (pDSVCell delim) (char delim)
-  pBlankLine *> A.skipMany pBlankLine
-  zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
-
-pDSVCell :: Char -> P T.Text
-pDSVCell delim =
-  T.strip . mconcat <$>
-    many (A.takeWhile1 (\c -> c /= delim && c /= '\\' && not (A.isEndOfLine c))
-       <|> (char '\\' *> ((\c -> "\\" <> T.singleton c) <$> A.anyChar)))
-
-toBasicCell :: T.Text -> ColumnSpec -> P TableCell
-toBasicCell t colspec = do
-  bs <- parseCellContents (fromMaybe DefaultStyle (colStyle colspec)) t
-  pure TableCell
-         { cellContent = bs
-         , cellHorizAlign = Nothing
-         , cellVertAlign = Nothing
-         , cellColspan = 1
-         , cellRowspan = 1
-         }
-
-
-pTableCellPSV :: Maybe Char -> Bool -> [ColumnSpec] -> P [TableCell]
-pTableCellPSV mbsep allowNewlines colspecs = do
-  let sep = fromMaybe '|' mbsep
-  cellData <- pCellSep sep
-  t <- T.pack <$>
-         many
-          (notFollowedBy (void (pCellSep sep) <|> void pTableBorder) *>
-           ((char '\\' *> A.char sep)
-             <|> A.satisfy (not . A.isEndOfLine)
-             <|> if allowNewlines
-                    then A.satisfy A.isEndOfLine
-                    else A.satisfy A.isEndOfLine <* notFollowedBy (pCellSep sep)))
-  let cell' = TableCell
-               { cellContent = []
-               , cellHorizAlign = cHorizAlign cellData
-               , cellVertAlign = cVertAlign cellData
-               , cellColspan = fromMaybe 1 $ cColspan cellData
-               , cellRowspan = fromMaybe 1 $ cRowspan cellData
-               }
-  let rawcells = replicate (cDuplicate cellData) (cell', t)
-  reverse . fst <$> foldM (\(cells, specs) (cell, rawtext) -> do
-                        let defsty = case specs of
-                                       spec:_ -> colStyle spec
-                                       _ -> Nothing
-                        let sty = fromMaybe DefaultStyle $ cStyle cellData <|> defsty
-                        bs <- parseCellContents sty rawtext
-                        pure (cell{ cellContent = bs } : cells,
-                              drop (cellColspan cell) specs))
-                ([],colspecs)
-                rawcells
-
-
-parseCellContents :: CellStyle -> T.Text -> P [Block]
-parseCellContents sty t =
-  case sty of
-    AsciiDocStyle ->
-      either (fail . show) (pure . docBlocks)
-       (parseDocument (\_ -> pure mempty)
-       (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
-       "table-cell"  -- TODO somehow get file path here
-        (t <> "\n"))
-    DefaultStyle -> parseParagraphs t
-    LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
-    EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
-    StrongStyle -> map (surroundPara Bold) <$> parseBlocks t
-    MonospaceStyle -> map (surroundPara Monospace) <$> parseBlocks t
-    HeaderStyle -> parseBlocks t
- where
-   surroundPara :: ([Inline] -> InlineType) -> Block -> Block
-   surroundPara bt (Block attr mbtitle (Paragraph ils)) =
-     Block attr mbtitle (Paragraph [Inline mempty $ bt ils])
-   surroundPara _ b = b
-
-
-data CellData =
-  CellData
-  { cDuplicate :: Int
-  , cHorizAlign :: Maybe HorizAlign
-  , cVertAlign :: Maybe VertAlign
-  , cColspan :: Maybe Int
-  , cRowspan :: Maybe Int
-  , cStyle :: Maybe CellStyle }
-  deriving (Show)
-
-toCellStyle :: Char -> Maybe CellStyle
-toCellStyle 'a' = Just AsciiDocStyle
-toCellStyle 'd' = Just DefaultStyle
-toCellStyle 'e' = Just EmphasisStyle
-toCellStyle 'h' = Just HeaderStyle
-toCellStyle 'l' = Just LiteralStyle
-toCellStyle 'm' = Just MonospaceStyle
-toCellStyle 's' = Just StrongStyle
-toCellStyle _   = Nothing
-
--- 2+| colspan 2
--- 3.+| rowspan 3
--- 2.3+| colspan 2, rowspan 3
--- 2*| duplicate cell twice
--- 2*.3+^.>s| duplicate 2x, rowspan 3, top align, right align, s style
-pCellSep :: Char -> P CellData
-pCellSep sep = do
-  mult <- A.option 1 pMultiplier
-  (colspan, rowspan) <- A.option (Nothing, Nothing) $ do
-    a <- optional A.decimal
-    b <- optional $ char '.' *> A.decimal
-    guard $ not (isNothing a && isNothing b)
-    char '+'
-    pure (a, b)
-  halign <- optional pHorizAlign
-  valign <- optional pVertAlign
-  sty <- (toCellStyle <$> A.satisfy (A.inClass "adehlms")) <|> pure Nothing
-  notFollowedBy pTableBorder <* char sep
-  pure $ CellData
-    { cDuplicate = mult
-    , cHorizAlign = halign
-    , cVertAlign = valign
-    , cColspan = colspan
-    , cRowspan = rowspan
-    , cStyle = sty
-    }
 
 pIndentedLiteral :: P BlockType
 pIndentedLiteral = do
@@ -1038,6 +749,304 @@ pNormalLine blockContexts = do
                 _ -> False
     _ -> pure ()
   pure t
+
+
+--- Table parsing:
+
+pTableBorder :: P TableSyntax
+pTableBorder = do
+  syntax <- (PSV <$ char '|') <|> (DSV <$ char ':') <|> (CSV <$ char ',')
+  void $ A.string "==="
+  A.skipWhile (=='=')
+  pBlankLine
+  A.skipMany pBlankLine
+  pure syntax
+
+pTable :: Maybe BlockTitle -> Attr -> P Block
+pTable mbtitle (Attr ps kvs) = do
+  syntax' <- pTableBorder
+  mbcolspecs <- maybe (pure Nothing) (fmap Just . parseColspecs)
+                  (M.lookup "cols" kvs)
+  let options = maybe [] T.words $ M.lookup "options" kvs
+  let syntax = case M.lookup "format" kvs of
+                 Just "psv" -> PSV
+                 Just "csv" -> CSV
+                 Just "dsv" -> DSV
+                 Just "tsv" -> TSV
+                 _ -> syntax'
+  let mbsep = case M.lookup "separator" kvs of
+                 Just sep ->
+                   case T.uncons sep of
+                     Just (c,_) -> Just c
+                     _ -> Nothing
+                 _ -> Nothing
+  let tableOpts = TableOpts { tableSyntax = syntax
+                            , tableSeparator = mbsep
+                            , tableHeader = "header" `elem` options ||
+                                "noheader" `notElem` options
+                            , tableFooter = "footer" `elem` options ||
+                                "nofooter" `notElem` options
+                            }
+  let getRows mbspecs rowspans = (([],[]) <$ pTableBorder) <|>
+         do -- for this row, we modify the specs based on rowspans
+            -- if there are rowspans from rows above, we need to skip some:
+            let mbspecs' = case mbspecs of
+                             Nothing -> Nothing
+                             Just specs' -> Just [s | (s,0) <- zip specs' rowspans]
+            row@(TableRow cells) <- pTableRow tableOpts mbspecs'
+            let numcols = sum (map cellColspan cells)
+            let specs = fromMaybe (replicate numcols defaultColumnSpec) mbspecs
+            -- now, update rowspans in light of new row
+            let updateRowspans [] rs = rs
+                updateRowspans (c:cs) rs =
+                  map (+ (cellRowspan c - 1)) (take (cellColspan c) rs)
+                  ++ updateRowspans cs (drop (cellColspan c) rs)
+            let rowspans' = updateRowspans cells rowspans
+            (\(rows, colspecs') -> (row:rows, case rows of
+                                                 [] -> specs
+                                                 _ -> colspecs'))
+                                     <$> getRows (Just specs) rowspans'
+  (rows, colspecs') <- getRows mbcolspecs (repeat (0 :: Int))
+  let attr' = Attr ps $ M.delete "format" .
+                        M.delete "separator" .
+                        M.delete "cols" .
+                        M.delete "options" $ kvs
+  let (mbHead, rest)
+        | tableHeader tableOpts = (Just (take 1 rows), drop 1 rows)
+        | otherwise = (Nothing, rows)
+  let (mbFoot, bodyRows)
+        | tableFooter tableOpts
+        , not (null rest) = (Just (drop (length rest - 1) rest),
+                             take (length rest - 1) rest)
+        | otherwise = (Nothing, rest)
+  pure $ Block attr' mbtitle $ Table colspecs' mbHead bodyRows mbFoot
+
+parseColspecs :: T.Text -> P [ColumnSpec]
+parseColspecs t =
+  case A.parseOnly pColspecs t of
+    Left e -> fail e
+    Right cs -> pure cs
+
+pColspecs :: P [ColumnSpec]
+pColspecs = mconcat <$> A.sepBy pColspecPart pComma <* A.option () pComma
+
+pColspecPart :: P [ColumnSpec]
+pColspecPart = do
+  multiplier <- A.option 1 pMultiplier
+  replicate multiplier <$> pColspec
+
+pMultiplier :: P Int
+pMultiplier = A.decimal <* char '*'
+
+pColspec :: P ColumnSpec
+pColspec = ColumnSpec <$> optional pHorizAlign
+                      <*> optional pVertAlign
+                      <*> (pWidth <|> pure Nothing)
+                      <*> (toCellStyle <$> A.satisfy (A.inClass "adehlms")
+                             <|> pure Nothing)
+
+pHorizAlign :: P HorizAlign
+pHorizAlign =
+  (AlignLeft <$ char '<') <|> (AlignCenter <$ char '^') <|> (AlignRight <$ char '>')
+
+pVertAlign :: P VertAlign
+pVertAlign = do
+  char '.'
+  (AlignTop <$ char '<') <|> (AlignMiddle <$ char '^') <|> (AlignBottom <$ char '>')
+
+pWidth :: P (Maybe Int)
+pWidth = (Just <$> (A.decimal <* A.option () (char '%'))) <|> (Nothing <$ char '~')
+
+data TableSyntax =
+    PSV
+  | CSV
+  | TSV
+  | DSV
+  deriving (Show)
+
+data TableOpts =
+  TableOpts { tableSyntax :: TableSyntax
+            , tableSeparator :: Maybe Char
+            , tableHeader :: Bool
+            , tableFooter :: Bool
+            }
+  deriving (Show)
+
+pTableRow :: TableOpts -> Maybe [ColumnSpec] -> P TableRow
+pTableRow opts mbcolspecs = TableRow <$>
+  case tableSyntax opts of
+       PSV
+         | Just colspecs <- mbcolspecs  ->
+             let getCell :: [ColumnSpec] -> P [TableCell]
+                 getCell [] = pure []
+                 getCell colspecs' = do
+                   xs <- pTableCellPSV (tableSeparator opts) True colspecs'
+                   A.skipMany pBlankLine
+                   (xs ++) <$> getCell (drop (sum (map cellColspan xs)) colspecs')
+             in  getCell colspecs
+         | otherwise -> mconcat <$>
+               some (pTableCellPSV (tableSeparator opts)
+                       False (repeat defaultColumnSpec))
+                     <* A.skipMany pBlankLine
+       CSV -> pCSVTableRow (fromMaybe ',' $ tableSeparator opts) mbcolspecs
+       TSV -> pCSVTableRow (fromMaybe '\t' $ tableSeparator opts) mbcolspecs
+       DSV -> pDSVTableRow (fromMaybe ':' $ tableSeparator opts) mbcolspecs
+
+defaultColumnSpec :: ColumnSpec
+defaultColumnSpec = ColumnSpec Nothing Nothing Nothing Nothing
+
+-- Note: AsciiDoc weirdly gobbles cells for rows even across CSV
+-- row boundaries. We're not going to do that.
+
+-- allows "; escape this as ""; delim can't be escaped
+pCSVTableRow :: Char -> Maybe [ColumnSpec] -> P [TableCell]
+pCSVTableRow delim mbcolspecs = do
+  let colspecs = fromMaybe [] mbcolspecs
+  as <- A.sepBy (pCSVCell delim) (char delim)
+  pBlankLine *> A.skipMany pBlankLine
+  zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
+
+pCSVCell :: Char -> P T.Text
+pCSVCell delim = do
+  A.skipWhile (== ' ')
+  mbc <- A.peekChar
+  case mbc of
+    Just '"'
+      -> char '"' *>
+          (T.pack <$>
+            A.manyTill (A.satisfy (/='"') <|> ('"' <$ A.string "\"\"")) (char '"'))
+    _ -> T.strip . T.replace "\"\"" "\"" <$>
+           A.takeWhile1 (\c -> c /= delim && not (A.isEndOfLine c))
+
+-- no "; escape delim with backslash
+pDSVTableRow:: Char -> Maybe [ColumnSpec] -> P [TableCell]
+pDSVTableRow delim mbcolspecs = do
+  let colspecs = fromMaybe [] mbcolspecs
+  as <- A.sepBy (pDSVCell delim) (char delim)
+  pBlankLine *> A.skipMany pBlankLine
+  zipWithM toBasicCell as (colspecs ++ repeat defaultColumnSpec)
+
+pDSVCell :: Char -> P T.Text
+pDSVCell delim =
+  T.strip . mconcat <$>
+    many (A.takeWhile1 (\c -> c /= delim && c /= '\\' && not (A.isEndOfLine c))
+       <|> (char '\\' *> ((\c -> "\\" <> T.singleton c) <$> A.anyChar)))
+
+toBasicCell :: T.Text -> ColumnSpec -> P TableCell
+toBasicCell t colspec = do
+  bs <- parseCellContents (fromMaybe DefaultStyle (colStyle colspec)) t
+  pure TableCell
+         { cellContent = bs
+         , cellHorizAlign = Nothing
+         , cellVertAlign = Nothing
+         , cellColspan = 1
+         , cellRowspan = 1
+         }
+
+
+pTableCellPSV :: Maybe Char -> Bool -> [ColumnSpec] -> P [TableCell]
+pTableCellPSV mbsep allowNewlines colspecs = do
+  let sep = fromMaybe '|' mbsep
+  cellData <- pCellSep sep
+  t <- T.pack <$>
+         many
+          (notFollowedBy (void (pCellSep sep) <|> void pTableBorder) *>
+           ((char '\\' *> A.char sep)
+             <|> A.satisfy (not . A.isEndOfLine)
+             <|> if allowNewlines
+                    then A.satisfy A.isEndOfLine
+                    else A.satisfy A.isEndOfLine <* notFollowedBy (pCellSep sep)))
+  let cell' = TableCell
+               { cellContent = []
+               , cellHorizAlign = cHorizAlign cellData
+               , cellVertAlign = cVertAlign cellData
+               , cellColspan = fromMaybe 1 $ cColspan cellData
+               , cellRowspan = fromMaybe 1 $ cRowspan cellData
+               }
+  let rawcells = replicate (cDuplicate cellData) (cell', t)
+  reverse . fst <$> foldM (\(cells, specs) (cell, rawtext) -> do
+                        let defsty = case specs of
+                                       spec:_ -> colStyle spec
+                                       _ -> Nothing
+                        let sty = fromMaybe DefaultStyle $ cStyle cellData <|> defsty
+                        bs <- parseCellContents sty rawtext
+                        pure (cell{ cellContent = bs } : cells,
+                              drop (cellColspan cell) specs))
+                ([],colspecs)
+                rawcells
+
+
+parseCellContents :: CellStyle -> T.Text -> P [Block]
+parseCellContents sty t =
+  case sty of
+    AsciiDocStyle ->
+      either (fail . show) (pure . docBlocks)
+       (parseDocument (\_ -> pure mempty)
+       (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
+       "table-cell"  -- TODO somehow get file path here
+        (t <> "\n"))
+    DefaultStyle -> parseParagraphs t
+    LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
+    EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
+    StrongStyle -> map (surroundPara Bold) <$> parseBlocks t
+    MonospaceStyle -> map (surroundPara Monospace) <$> parseBlocks t
+    HeaderStyle -> parseBlocks t
+ where
+   surroundPara :: ([Inline] -> InlineType) -> Block -> Block
+   surroundPara bt (Block attr mbtitle (Paragraph ils)) =
+     Block attr mbtitle (Paragraph [Inline mempty $ bt ils])
+   surroundPara _ b = b
+
+
+data CellData =
+  CellData
+  { cDuplicate :: Int
+  , cHorizAlign :: Maybe HorizAlign
+  , cVertAlign :: Maybe VertAlign
+  , cColspan :: Maybe Int
+  , cRowspan :: Maybe Int
+  , cStyle :: Maybe CellStyle }
+  deriving (Show)
+
+toCellStyle :: Char -> Maybe CellStyle
+toCellStyle 'a' = Just AsciiDocStyle
+toCellStyle 'd' = Just DefaultStyle
+toCellStyle 'e' = Just EmphasisStyle
+toCellStyle 'h' = Just HeaderStyle
+toCellStyle 'l' = Just LiteralStyle
+toCellStyle 'm' = Just MonospaceStyle
+toCellStyle 's' = Just StrongStyle
+toCellStyle _   = Nothing
+
+-- 2+| colspan 2
+-- 3.+| rowspan 3
+-- 2.3+| colspan 2, rowspan 3
+-- 2*| duplicate cell twice
+-- 2*.3+^.>s| duplicate 2x, rowspan 3, top align, right align, s style
+pCellSep :: Char -> P CellData
+pCellSep sep = do
+  mult <- A.option 1 pMultiplier
+  (colspan, rowspan) <- A.option (Nothing, Nothing) $ do
+    a <- optional A.decimal
+    b <- optional $ char '.' *> A.decimal
+    guard $ not (isNothing a && isNothing b)
+    char '+'
+    pure (a, b)
+  halign <- optional pHorizAlign
+  valign <- optional pVertAlign
+  sty <- (toCellStyle <$> A.satisfy (A.inClass "adehlms")) <|> pure Nothing
+  notFollowedBy pTableBorder <* char sep
+  pure $ CellData
+    { cDuplicate = mult
+    , cHorizAlign = halign
+    , cVertAlign = valign
+    , cColspan = colspan
+    , cRowspan = rowspan
+    , cStyle = sty
+    }
+
+
+--- Inline parsing:
 
 pInlines :: P [Inline]
 pInlines = pInlines' []
@@ -1526,6 +1535,8 @@ pHardBreak = do
   char '+'
   _ <- A.takeWhile1 (\c -> c == '\r' || c == '\n')
   pure $ Inline mempty HardBreak
+
+--- Utility functions:
 
 readDecimal :: Text -> Maybe Int
 readDecimal t =
