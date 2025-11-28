@@ -329,17 +329,16 @@ skipBlankLines blockContexts =
 pBlankLine :: P ()
 pBlankLine = takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> endOfLine)
 
-parseBlocks :: Text -> P [Block]
-parseBlocks t = do
+parseWith :: P a -> Text -> P a
+parseWith p t = do
   fp <- ask
-  either (fail . errorMessage) pure $
-    parse (many (pBlock [])) fp (T.strip t <> "\n")
+  either (fail . errorMessage) pure $ parse p fp t
+
+parseBlocks :: Text -> P [Block]
+parseBlocks = parseWith (many (pBlock [])) . (<> "\n") . T.strip
 
 parseParagraphs :: Text -> P [Block]
-parseParagraphs t = do
-  fp <- ask
-  either (fail . errorMessage) pure $
-    parse (many pParagraph) fp (T.strip t <> "\n")
+parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
  where
   pParagraph = do
     skipBlankLines []
