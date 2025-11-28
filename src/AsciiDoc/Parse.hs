@@ -97,9 +97,12 @@ parseDocument getFileContents raiseError path t =
 
 --- Wrapped parser type:
 
-newtype P a = P { unP :: ReaderT FilePath A.Parser a }
+newtype P a = P { unP :: ReaderT ParserConfig A.Parser a }
   deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
-            MonadFail, MonadReader FilePath)
+            MonadFail, MonadReader ParserConfig)
+
+data ParserConfig = ParserConfig { filePath :: FilePath }
+                    deriving (Show)
 
 data ParseError = ParseError { errorPosition :: Int
                              , errorMessage :: String
@@ -107,7 +110,7 @@ data ParseError = ParseError { errorPosition :: Int
                   deriving (Show)
 
 parse :: P a -> FilePath -> T.Text -> Either ParseError a
-parse p fp t = go $ A.parse (runReaderT (unP p) fp) t
+parse p fp t = go $ A.parse (runReaderT (unP p) ParserConfig{ filePath = fp }) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
@@ -142,8 +145,8 @@ isEndOfLine = A.isEndOfLine
 
 match :: P a -> P (T.Text, a)
 match p = P $ do
-  fp <- ask
-  lift $ A.match (runReaderT (unP p) fp)
+  parseInfo <- ask
+  lift $ A.match (runReaderT (unP p) parseInfo)
 
 string :: T.Text -> P T.Text
 string = liftP . A.string
@@ -327,7 +330,7 @@ pBlankLine = takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> endOfL
 
 parseWith :: P a -> Text -> P a
 parseWith p t = do
-  fp <- ask
+  fp <- asks filePath
   either (fail . errorMessage) pure $ parse p fp t
 
 parseBlocks :: Text -> P [Block]
@@ -680,7 +683,7 @@ pListing mbtitle attr = (do
           Attr ["source"] kvs -> (Nothing, Attr [] kvs)
           _ -> (Nothing, attr)
   lns <- toSourceLines <$> pDelimitedLiteralBlock '-' 4
-  fp <- ask
+  fp <- asks filePath
   pure $ Block attr' mbtitle $
     case lns of
       [SourceLine x []] | "include::" `T.isPrefixOf` x
@@ -826,7 +829,7 @@ newlinesToHardbreaks (x : xs) = x : newlinesToHardbreaks xs
 pNormalLine :: [BlockContext] -> P Text
 pNormalLine blockContexts = do
   t <- pLine
-  fp <- ask
+  fp <- asks filePath
   guard $ not $ T.all (\c -> c == ' ' || c == '\t') t
   guard $ T.take 1 t /= "[" ||
           case parse (pAttributes *> skipWhile isSpace *> endOfInput)
@@ -920,7 +923,7 @@ pTable mbtitle (Attr ps kvs) = do
 
 parseColspecs :: T.Text -> P [ColumnSpec]
 parseColspecs t = do
-  fp <- ask
+  fp <- asks filePath
   case parse pColspecs fp t of
     Left e -> fail $ errorMessage e
     Right cs -> pure cs
@@ -1078,7 +1081,7 @@ parseCellContents :: CellStyle -> T.Text -> P [Block]
 parseCellContents sty t =
   case sty of
     AsciiDocStyle -> do
-      fp <- ask
+      fp <- asks filePath
       either (fail . show) (pure . docBlocks)
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
