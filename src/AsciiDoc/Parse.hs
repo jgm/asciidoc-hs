@@ -115,9 +115,6 @@ pDocument = do
   bs <- many (pBlock [SectionContext (minSectionLevel - 1)])
   pure $ Document { docMeta = meta , docBlocks = bs }
 
--- authorAttributes :: [Author] -> M.Map Text Text
--- authorAttributes as = mempty -- TODO
-
 pDocumentHeader :: P Meta
 pDocumentHeader = do
   let handleAttr m (Left k) = M.delete k m
@@ -139,10 +136,6 @@ pDocumentHeader = do
                  then pure Nothing
                  else optional pDocumentRevision
   attrs <- foldl' handleAttr topattrs <$> many pDocAttribute
-  -- TODO add authors from attributes
-  -- = The Intrepid Chronicles
-  -- :author: Kismet R. Lee
-  -- :email: kismet@asciidoctor.org
   pure $ Meta{ docTitle = title
              , docTitleAttributes = titleAttr
              , docAuthors = authors
@@ -525,7 +518,7 @@ parseCellContents sty t =
       either (fail . show) (pure . docBlocks)
        (parseDocument (\_ -> pure mempty)
        (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
-       "table-cell"  -- TODO somehow get file path here 
+       "table-cell"  -- TODO somehow get file path here
         (t <> "\n"))
     DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
