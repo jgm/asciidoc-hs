@@ -1205,12 +1205,16 @@ pFormattedTextAttributes = do
 pAttributes :: P Attr
 pAttributes = do
   vchar '['
+  xs <- option [] $
+         (:[]) <$> takeWhile1 (\c -> isAlphaNum c || c == '-' || c == '_') <*
+                    (do mbc <- peekChar
+                        guard $ mbc == Just '#' || mbc == Just '.')
   as <- pShorthandAttributes
   bs <- option []
          (do unless (as == mempty) pComma
              sepBy pAttribute pComma <* option () pComma)
   vchar ']'
-  let positional = lefts bs
+  let positional = xs ++ lefts bs
   let kvs = rights bs
   pure $ as <> Attr positional (M.fromList kvs)
 
