@@ -38,6 +38,7 @@ module AsciiDoc.AST
   , Callout(..)
   , IndexTerm(..)
   , SourceLine(..)
+  , CounterType(..)
   ) where
 
 import Control.Monad
@@ -447,6 +448,7 @@ data InlineType
   | AttributeReference AttributeName
   | Span [Inline]
   | IndexEntry IndexTerm
+  | Counter Text (Maybe (CounterType, Int))
   | Passthrough Text
   deriving (Show, Eq, Generic, Data, Typeable)
 
@@ -480,3 +482,11 @@ newtype Target = Target Text
 instance ToJSON Target where
     toEncoding = genericToEncoding defaultOptions
 instance FromJSON Target
+
+data CounterType =
+  DecimalCounter | UpperAlphaCounter | LowerAlphaCounter
+  deriving (Show, Eq, Generic, Data, Typeable)
+
+instance ToJSON CounterType where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON CounterType

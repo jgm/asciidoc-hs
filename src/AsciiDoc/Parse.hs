@@ -26,7 +26,8 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit)
+import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit,
+                  isUpper, isLower, ord)
 import AsciiDoc.AST
 import AsciiDoc.Generic
 -- import Debug.Trace
@@ -1326,7 +1327,7 @@ pInline prevChars = do
              case c of
                '\'' -> pApostrophe '\''
                '+' -> pHardBreak
-               '{' -> pAttributeReference
+               '{' -> pCounter <|> pAttributeReference
                '\\' -> pEscape
                '<' -> pBracedAutolink <|> pCrossReference
                '&' -> pCharacterReference
@@ -1628,6 +1629,27 @@ pEscape =
   vchar '\\' *>
    (Inline mempty . Str . T.singleton <$>
       satisfy (\c -> isPunctuation c || isLetter c))
+
+pCounter :: P Inline
+pCounter = do
+  vchar '{' <* string "counter:"
+  name <- pDocAttributeName
+  mbvalue <- optional (vchar ':' *> pCounterValue)
+  vchar '}'
+  pure $ Inline mempty $ Counter name mbvalue
+
+pCounterValue :: P (CounterType, Int)
+pCounterValue = pUpperValue <|> pLowerValue <|> pDecimalValue
+ where
+   pUpperValue = do
+     c <- satisfy (\c -> isAscii c && isUpper c)
+     pure (UpperAlphaCounter, 1 + (ord c - ord 'A'))
+   pLowerValue = do
+     c <- satisfy (\c -> isAscii c && isLower c)
+     pure (UpperAlphaCounter, 1 + (ord c - ord 'a'))
+   pDecimalValue = do
+     n <- decimal
+     pure (DecimalCounter, n)
 
 pAttributeReference :: P Inline
 pAttributeReference = do
