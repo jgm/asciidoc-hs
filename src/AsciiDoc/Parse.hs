@@ -31,11 +31,14 @@ import AsciiDoc.AST
 import AsciiDoc.Generic
 -- import Debug.Trace
 
--- | Parse a complete AsciiDoc document
+-- | Parse an AsciiDoc document into an AST.
 parseDocument :: Monad m
-              => (FilePath -> m Text) -- ^ Get contents of an included file
-              -> (Int -> String -> m Document) -- ^ Raise an error given source pos and message
-              -> FilePath -- ^ Path of file containing the text (need for include handling)
+              => (FilePath -> m Text)
+                  -- ^ Get contents of an included file
+              -> (FilePath -> Int -> String -> m Document)
+                  -- ^ Raise an error given source pos and message
+              -> FilePath
+                  -- ^ Path of file containing the text
               -> Text -- ^ Text to convert
               -> m Document
 parseDocument getFileContents raiseError path t =
@@ -43,10 +46,12 @@ parseDocument getFileContents raiseError path t =
      >>= resolveAttributeReferences . addIdentifiers
      >>= resolveCrossReferences
  where
-  handleResult (Left err) = raiseError (errorPosition err) (errorMessage err)
+  handleResult (Left err) =
+    raiseError path (errorPosition err) (errorMessage err)
   handleResult (Right r) = pure r
 
-  toAnchorMap d = foldBlocks blockAnchor d <> foldInlines inlineAnchor d
+  toAnchorMap d =
+    foldBlocks blockAnchor d <> foldInlines inlineAnchor d
 
   blockAnchor (Block (Attr _ kvs) _ (Section _ ils _))
     | Just ident <- M.lookup "id" kvs = M.singleton ident ils
@@ -57,7 +62,8 @@ parseDocument getFileContents raiseError path t =
   inlineAnchor _ = mempty
 
   resolveCrossReferences d = mapInlines (resolveCrossReference (toAnchorMap d)) d
-  resolveCrossReference anchorMap x@(Inline attr (CrossReference ident Nothing)) =
+  resolveCrossReference anchorMap
+   x@(Inline attr (CrossReference ident Nothing)) =
     let ident' = T.takeWhileEnd (/= '#') ident -- strip off file part
     in case M.lookup ident' anchorMap of
         Just ils -> pure $ Inline attr (CrossReference ident' (Just ils))
@@ -88,7 +94,8 @@ parseDocument getFileContents raiseError path t =
       >>= mapBlocks handleIncludeBlock
   handleIncludeBlock x = pure x
 
--- | Make a relative path relative to a parent's directory. Leaves absolute paths alone.
+-- | Make a relative path relative to a parent's directory.
+-- Leaves absolute paths alone.
 resolvePath :: FilePath -> FilePath -> FilePath
 resolvePath parentPath fp
   | isRelative fp = takeDirectory parentPath </> fp
@@ -1109,11 +1116,11 @@ parseCellContents sty t =
   case sty of
     AsciiDocStyle -> do
       fp <- asks filePath
-      either (fail . show) (pure . docBlocks)
-       (parseDocument (\_ -> pure mempty)
-       (\pos msg -> Left $ "Parse error at position " <> show pos <> ": " <> msg)
+      docBlocks <$>
+       parseDocument (\_ -> pure mempty)
+       (\_fp _pos msg -> fail msg)
        fp
-       (t <> "\n"))
+       (t <> "\n")
     DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
     EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t

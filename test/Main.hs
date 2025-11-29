@@ -63,8 +63,9 @@ toGoldenTest fp =
     result <- convert inText
     constructGoldenTest (inText, result)
 
-  raiseError pos msg =
-    error $ "Parse error at position " <> show pos <> ": " <> msg
+  raiseError path pos msg =
+    error $ "Parse error at " <> show path <>
+             " position " <> show pos <> ": " <> msg
 
   convert inText =
     T.pack . ppShow <$> parseDocument TIO.readFile raiseError fp inText
