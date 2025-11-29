@@ -240,7 +240,10 @@ pDocument = do
   let minSectionLevel = case M.lookup "doctype" (docAttributes meta) of
                           Just "book" -> 0
                           _ -> 1
-  bs <- withBlockContext (SectionContext (minSectionLevel - 1)) (many pBlock)
+  bs <- (case M.lookup "hardbreaks-option" (docAttributes meta) of
+            Just "" -> withHardBreaks
+            _ -> id) $
+        withBlockContext (SectionContext (minSectionLevel - 1)) (many pBlock)
   skipWhile isSpace
   endOfInput
   pure $ Document { docMeta = meta , docBlocks = bs }
