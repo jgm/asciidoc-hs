@@ -1,0 +1,64 @@
+.Theorem {counter:theorem:A}
+3 is odd.        
+
+.Theorem {counter:theorem}
+4 is even.
+
+{counter:new} {counter:new}
+ 
+{counter:new:15} should be 3.
+
+{counter:special:4} should be 4.
+and now {counter:special}
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          (Just
+             (BlockTitle
+                [ Inline mempty (Str "Theorem ")
+                , Inline mempty (Counter "theorem" UpperAlphaCounter 1)
+                ]))
+          (Paragraph [ Inline mempty (Str "3 is odd.") ])
+      , Block
+          mempty
+          (Just
+             (BlockTitle
+                [ Inline mempty (Str "Theorem ")
+                , Inline mempty (Counter "theorem" UpperAlphaCounter 2)
+                ]))
+          (Paragraph [ Inline mempty (Str "4 is even.") ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Counter "new" DecimalCounter 1)
+             , Inline mempty (Str " ")
+             , Inline mempty (Counter "new" DecimalCounter 2)
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Counter "new" DecimalCounter 3)
+             , Inline mempty (Str " should be 3.")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Counter "special" DecimalCounter 4)
+             , Inline mempty (Str " should be 4.\nand now ")
+             , Inline mempty (Counter "special" DecimalCounter 5)
+             ])
+      ]
+  }

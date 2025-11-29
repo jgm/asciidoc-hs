@@ -11,7 +11,6 @@ Not (yet) supported:
 - [ ] Tables inside table cells
 - [ ] Automatically assigned document attributes (e.g. `firstname`,
       derived from author)
-- [ ] Sequence counters
 - [ ] Conditional processing directives (`ifdef`, `ifndef`, etc.)
 
 ## Instructions

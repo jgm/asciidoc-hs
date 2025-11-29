@@ -14,7 +14,7 @@ import Prelude hiding (takeWhile)
 import Text.HTML.TagSoup.Entity (lookupNamedEntity)
 import Data.Maybe (isNothing, listToMaybe, fromMaybe)
 import Data.Bifunctor (first)
-import Data.Either (lefts, rights, fromRight)
+import Data.Either (lefts, rights)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Read as TR
@@ -108,7 +108,9 @@ newtype P a = P { unP :: ReaderT ParserConfig (StateT ParserState A.Parser) a }
   deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
             MonadFail, MonadReader ParserConfig, MonadState ParserState)
 
-data ParserState = ParserState ()
+newtype ParserState = ParserState
+                     { counterMap :: M.Map Text (CounterType, Int)
+                     }
         deriving (Show)
 
 data ParserConfig = ParserConfig
@@ -122,13 +124,17 @@ data ParseError = ParseError { errorPosition :: Int
                              } deriving (Show)
 
 parse :: P a -> FilePath -> T.Text -> Either ParseError a
-parse p fp t = go $ A.parse (evalStateT
-                             ( runReaderT (unP p)
-                                ParserConfig{ filePath = fp
-                                            , blockContexts = []
-                                            , hardBreaks = False
-                                            } )
-                                (ParserState ())) t
+parse p fp = parse' (ParserConfig{ filePath = fp
+                                 , blockContexts = []
+                                 , hardBreaks = False
+                                 })
+                    (ParserState { counterMap = mempty })
+                    p
+
+parse' :: ParserConfig -> ParserState
+       -> P a -> T.Text -> Either ParseError a
+parse' cfg st p t =
+  go $ A.parse (evalStateT ( runReaderT (unP p) cfg ) st) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
@@ -269,7 +275,7 @@ pDocumentHeader = do
 pDocumentTitle :: P [Inline]
 pDocumentTitle = do
   (vchar '=' <|> vchar '#') <* some (char ' ')
-  parseInlines <$> pLine
+  pLine >>= parseInlines
 
 pDocumentAuthors :: P [Author]
 pDocumentAuthors = do
@@ -360,8 +366,14 @@ pBlankLine = takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> endOfL
 
 parseWith :: P a -> Text -> P a
 parseWith p t = do
-  fp <- asks filePath
-  either (fail . errorMessage) pure $ parse p fp t
+  cfg <- ask
+  st <- get
+  let result = parse' cfg st ((,) <$> p <*> get) t
+  case result of
+    Left e -> fail $ errorMessage e
+    Right (x, newst) -> do
+      put newst
+      pure x
 
 parseBlocks :: Text -> P [Block]
 parseBlocks = parseWith (many pBlock) . (<> "\n") . T.strip
@@ -379,9 +391,8 @@ parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
     skipMany (pCommentBlock attr)
     (if hardbreaks then withHardBreaks else id) $ Block attr mbtitle <$> pPara
 
-parseInlines :: Text -> [Inline]
-parseInlines t = do
-  fromRight mempty $ parse pInlines "" (T.strip t)
+parseInlines :: Text -> P [Inline]
+parseInlines = parseWith pInlines . T.strip
 
 pBlock :: P Block
 pBlock = do
@@ -471,7 +482,7 @@ pBlockMacro' = do
          <|>
          (vchar '\\' *> (T.singleton <$> satisfy (\c -> c == '[' || c == '+')))
          <|>
-         (do Inline _ (Str t) <- pInMatched False '+' mempty Str
+         (do Inline _ (Str t) <- pInMatched False '+' mempty (pure . Str)
              pure t))
   target <- mconcat <$> many targetChars
   pure (name, target)
@@ -521,7 +532,7 @@ pSection = do
       lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
       guard (lev > sectionLevel && lev >= 0 && lev <= 5)
       vchar ' '
-      title <- parseInlines <$> pLine
+      title <- pLine >>= parseInlines
       contents <- withBlockContext (SectionContext lev) $ many pBlock
       -- note: we use sectionLevel, not lev, so in improperly nested content, e.g.,
       -- == foo
@@ -540,7 +551,7 @@ pDiscreteHeading mbtitle attr = do
   lev <- (\x -> length x - 1) <$> (some (vchar '=') <|> some (vchar '#'))
   guard (lev >= 0 && lev <= 5)
   vchar ' '
-  title <- parseInlines <$> pLine
+  title <- pLine >>= parseInlines
   pure $ Block (Attr (drop 1 ps) kvs) mbtitle $ DiscreteHeading (Level lev) title
 
 pTitlesAndAttributes :: P (Maybe BlockTitle, Attr)
@@ -565,14 +576,14 @@ pAnchor = do
   pure (Attr mempty (M.singleton "id" anchor))
 
 pTitle :: P BlockTitle
-pTitle = BlockTitle . parseInlines <$>
+pTitle = BlockTitle <$>
            (do vchar '.'
                mbc <- peekChar
                guard $ case mbc of
                          Just ' ' -> False
                          Just '.' -> False
                          _ -> True
-               pLineWithEscapes)
+               pLineWithEscapes >>= parseInlines)
 
 pDefinitionList :: P BlockType
 pDefinitionList =
@@ -586,9 +597,9 @@ pDefinitionListItem = do
                        ListContext ':' n : _ -> guard (T.length t == n + 2)
                        _ -> guard (T.length t == 2))
   skipWhile (== ' ')
-  term <- parseInlines . mconcat
-             <$> manyTill (takeWhile1 (\c -> not (isEndOfLine c || c == ':'))
+  term <- manyTill (takeWhile1 (\c -> not (isEndOfLine c || c == ':'))
                               <|> takeWhile1 (==':')) marker
+                    >>= parseInlines . mconcat
   skipWhile (== ' ')
   option () endOfLine
   skipWhile (== ' ')
@@ -854,9 +865,9 @@ pPara = do
           else (t', Nothing)
   ts <- many pNormalLine
   hardbreaks <- asks hardBreaks
-  let ils = (if hardbreaks
-                then newlinesToHardbreaks
-                else id) $ parseInlines $ T.unlines (t:ts)
+  ils <- (if hardbreaks
+             then newlinesToHardbreaks
+             else id) <$> parseInlines (T.unlines (t:ts))
   pure $ case mbAdmonition of
            Nothing -> Paragraph ils
            Just admonType -> Admonition admonType
@@ -1318,13 +1329,13 @@ pInline prevChars = do
   (do attr <- pFormattedTextAttributes <|> pure mempty
       c <- peekChar'
       case c of
-        '*' -> inMatched '*' attr (Bold . parseInlines)
-        '_' -> inMatched '_' attr (Italic . parseInlines)
-        '`' -> inMatched '`' attr (Monospace . parseInlines)
-        '#' -> inMatched '#' attr (Span . parseInlines)
-        '~' -> pInSingleMatched '~' attr (Subscript . parseInlines)
-        '^' -> pInSingleMatched '^' attr (Superscript . parseInlines)
-        '+' -> pTriplePassthrough <|> inMatched '+' attr Str
+        '*' -> inMatched '*' attr (fmap Bold . parseInlines)
+        '_' -> inMatched '_' attr (fmap Italic . parseInlines)
+        '`' -> inMatched '`' attr (fmap Monospace . parseInlines)
+        '#' -> inMatched '#' attr (fmap Span . parseInlines)
+        '~' -> pInSingleMatched '~' attr (fmap Subscript . parseInlines)
+        '^' -> pInSingleMatched '^' attr (fmap Superscript . parseInlines)
+        '+' -> pTriplePassthrough <|> inMatched '+' attr (pure . Str)
         '"' -> pQuoted '"' attr DoubleQuoted
         '\'' -> pQuoted '\'' attr SingleQuoted
         '(' -> pIndexEntry attr
@@ -1367,21 +1378,21 @@ pCrossReference = do
   case ts of
     [] -> mzero
     [x] -> pure $ Inline mempty $ CrossReference x Nothing
-    (x:xs) -> pure $ Inline mempty $ CrossReference x
-                       (Just (parseInlines (T.intercalate "," xs)))
+    (x:xs) -> Inline mempty . CrossReference x . Just
+                       <$> parseInlines (T.intercalate "," xs)
 
 data MatchState = Backslash | OneDelim | Regular
   deriving Show
 
 -- used for super/subscript, which can't accept spaces but take single delims
-pInSingleMatched :: Char -> Attr -> (Text -> InlineType) -> P Inline
+pInSingleMatched :: Char -> Attr -> (Text -> P InlineType) -> P Inline
 pInSingleMatched delim attr toInlineType = do
   vchar delim
   cs <- manyTill (satisfy (not . isSpace)) (vchar delim)
   guard $ not $ null cs
-  pure $ Inline attr (toInlineType (T.pack cs))
+  Inline attr <$> toInlineType (T.pack cs)
 
-pInMatched :: Bool -> Char -> Attr -> (Text -> InlineType) -> P Inline
+pInMatched :: Bool -> Char -> Attr -> (Text -> P InlineType) -> P Inline
 pInMatched maybeUnconstrained delim attr toInlineType = do
   vchar delim
   isDoubled <- option False (True <$ vchar delim)
@@ -1397,7 +1408,7 @@ pInMatched maybeUnconstrained delim attr toInlineType = do
     case mbc of
       Nothing -> pure ()
       Just c -> guard $ isSpace c || isPunctuation c
-  pure $ Inline attr (toInlineType (T.pack cs))
+  Inline attr <$> toInlineType (T.pack cs)
 
 pInlineAnchor :: P Inline
 pInlineAnchor = do
@@ -1407,7 +1418,7 @@ pInlineAnchor = do
         case T.split (==',') contents of
           [] -> (mempty, mempty)
           (x:ys) -> (x, mconcat ys)
-  pure $ Inline mempty $ InlineAnchor anchorId (parseInlines xrefLabel)
+  Inline mempty . InlineAnchor anchorId <$> parseInlines xrefLabel
 
 pBibAnchor :: P Inline
 pBibAnchor = do
@@ -1418,7 +1429,7 @@ pBibAnchor = do
           [] -> (mempty, mempty)
           (x:ys) -> (x, mconcat ys)
   skipWhile (== ' ')
-  pure $ Inline mempty $ BibliographyAnchor anchorId (parseInlines xrefLabel)
+  Inline mempty . BibliographyAnchor anchorId <$> parseInlines xrefLabel
 
 pCharacterReference :: P Inline
 pCharacterReference =
@@ -1443,7 +1454,7 @@ pCharacterEntityReference = do
 pQuoted :: Char -> Attr -> ([Inline] -> InlineType) -> P Inline
 pQuoted c attr constructor = do
   vchar c
-  result <- pInMatched True '`' attr (constructor . parseInlines)
+  result <- pInMatched True '`' attr (fmap constructor . parseInlines)
   vchar c
   return result
 
@@ -1461,7 +1472,7 @@ pInlineMacro = do
          <|>
          (vchar '\\' *> (T.singleton <$> satisfy (\c -> c == '[' || c == '+')))
          <|>
-        (do Inline _ (Str t) <- pInMatched False '+' mempty Str
+        (do Inline _ (Str t) <- pInMatched False '+' mempty (pure . Str)
             pure t)
        )
   target <- mconcat <$> many targetChars
@@ -1497,7 +1508,7 @@ inlineMacros = M.fromList
               case T.split (==',') target of
                 [] -> (mempty, mempty)
                 (x:ys) -> (x, mconcat ys)
-        pure $ Inline attr $ InlineAnchor anchorId (parseInlines xrefLabel))
+        Inline attr . InlineAnchor anchorId <$> parseInlines xrefLabel)
   , ("pass", \_ -> do
        attr <- pAttributes
        let (description, attr') = extractDescription attr
@@ -1505,24 +1516,24 @@ inlineMacros = M.fromList
   , ("link", \target -> do
       attr <- pAttributes
       let (description, attr') = extractDescription attr
-      pure $ Inline attr' $ Link URLLink (Target target)
-                                 (if T.null description
-                                     then [Inline mempty (Str target)]
-                                     else parseInlines description))
+      Inline attr' . Link URLLink (Target target)
+          <$> (if T.null description
+                  then pure [Inline mempty (Str target)]
+                  else parseInlines description))
   , ("mailto", \target -> do
       attr <- pAttributes
       let (description, attr') = extractDescription attr
-      pure $ Inline attr' $ Link EmailLink (Target target)
-                                 (if T.null description
-                                 then [Inline mempty (Str target)]
-                                 else parseInlines description))
+      Inline attr' . Link EmailLink (Target target)
+             <$> if T.null description
+                    then pure [Inline mempty (Str target)]
+                    else parseInlines description)
   , ("footnote", \target -> do
       attr <- pAttributes
       let (contents, attr') = extractDescription attr
           fnid = if target == mempty
                     then Nothing
                     else Just (FootnoteId target)
-      pure $ Inline attr' $ Footnote fnid (parseInlines contents))
+      Inline attr' . Footnote fnid <$> parseInlines contents)
   , ("footnoteref", \_ -> do
       (Attr ps kvs) <- pAttributes
       (target, contents) <- case ps of
@@ -1532,9 +1543,9 @@ inlineMacros = M.fromList
       let fnid = if target == mempty
                   then Nothing
                   else Just (FootnoteId target)
-      pure $ Inline (Attr mempty kvs) $ Footnote fnid (parseInlines contents))
+      Inline (Attr mempty kvs) . Footnote fnid <$> parseInlines contents)
   , ("xref", \target -> do
-        ils <- parseInlines <$> pBracketedText
+        ils <- pBracketedText >>= parseInlines
         let mbtext = if null ils then Nothing else Just ils
         pure $ Inline mempty $ CrossReference target mbtext)
   , ("image", \target -> do
@@ -1589,10 +1600,10 @@ pEmailAutolink = do
   let email = a <> "@" <> b <> "." <> c
   attr <- pAttributes <|> pure mempty
   let (description, attr') = extractDescription attr
-  pure $ Inline attr' $ Link EmailLink (Target email)
-                             (if T.null description
-                                 then [Inline mempty (Str email)]
-                                 else parseInlines description)
+  Inline attr' . Link EmailLink (Target email)
+           <$> if T.null description
+                  then pure [Inline mempty (Str email)]
+                  else parseInlines description
 
 pAutolink :: P Inline
 pAutolink = do
@@ -1616,14 +1627,14 @@ pAutolink = do
                        Just d | isSpace d || isSpecialPunct d -> mzero
                        _ -> pure c))
   url <- (scheme <>) . mconcat <$> some
-          (urlChunk <|> (do Inline _ (Str t) <- pInMatched False '+' mempty Str
+          (urlChunk <|> (do Inline _ (Str t) <- pInMatched False '+' mempty (pure . Str)
                             pure t))
   attr <- pAttributes <|> pure mempty
   let (description, attr') = extractDescription attr
-  pure $ Inline attr' $ Link URLLink (Target url)
-                             (if T.null description
-                                 then [Inline mempty (Str url)]
-                                 else parseInlines description)
+  Inline attr' . Link URLLink (Target url)
+             <$> if T.null description
+                    then pure [Inline mempty (Str url)]
+                    else parseInlines description
 
 pBracedAutolink :: P Inline
 pBracedAutolink = vchar '<' *> pAutolink <* vchar '>'
@@ -1642,7 +1653,17 @@ pCounter = do
   name <- pDocAttributeName
   mbvalue <- optional (vchar ':' *> pCounterValue)
   vchar '}'
-  pure $ Inline mempty $ Counter name mbvalue
+  cmap <- gets counterMap
+  let (ctype, val) =
+        case M.lookup name cmap of
+          Just (ctype', val') -> (ctype', val' + 1)
+          Nothing ->
+            case mbvalue of
+              Nothing -> (DecimalCounter, 1)
+              Just (ctype', val') -> (ctype', val')
+  modify $ \st -> st{ counterMap =
+                       M.insert name (ctype, val) (counterMap st) }
+  pure $ Inline mempty $ Counter name ctype val
 
 pCounterValue :: P (CounterType, Int)
 pCounterValue = pUpperValue <|> pLowerValue <|> pDecimalValue

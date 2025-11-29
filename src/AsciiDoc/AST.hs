@@ -448,7 +448,7 @@ data InlineType
   | AttributeReference AttributeName
   | Span [Inline]
   | IndexEntry IndexTerm
-  | Counter Text (Maybe (CounterType, Int))
+  | Counter Text CounterType Int
   | Passthrough Text
   deriving (Show, Eq, Generic, Data, Typeable)
 
