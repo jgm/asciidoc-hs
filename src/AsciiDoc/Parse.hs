@@ -359,6 +359,9 @@ parseWith p t = do
 parseBlocks :: Text -> P [Block]
 parseBlocks = parseWith (many pBlock) . (<> "\n") . T.strip
 
+parseAsciidoc :: Text -> P Document
+parseAsciidoc = parseWith pDocument . (<> "\n") . T.strip
+
 parseParagraphs :: Text -> P [Block]
 parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
  where
@@ -1114,13 +1117,7 @@ pTableCellPSV mbsep allowNewlines colspecs = do
 parseCellContents :: CellStyle -> T.Text -> P [Block]
 parseCellContents sty t =
   case sty of
-    AsciiDocStyle -> do
-      fp <- asks filePath
-      docBlocks <$>
-       parseDocument (\_ -> pure mempty)
-       (\_fp _pos msg -> fail msg)
-       fp
-       (t <> "\n")
+    AsciiDocStyle -> docBlocks <$> parseAsciidoc t
     DefaultStyle -> parseParagraphs t
     LiteralStyle -> pure [Block mempty Nothing $ LiteralBlock t]
     EmphasisStyle -> map (surroundPara Italic) <$> parseBlocks t
