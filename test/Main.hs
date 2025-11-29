@@ -43,7 +43,7 @@ findTestFiles baseDir = do
   categories <- listDirectory baseDir
   let go f = do
         xs <- map ((baseDir </> f) </>) <$> listDirectory (baseDir </> f)
-        return $ (f, sort $ filter ((== ".test") . takeExtension) xs)
+        return (f, sort $ filter ((== ".test") . takeExtension) xs)
   mapM go categories
 
 toGoldenTest :: FilePath -> TestTree
@@ -105,7 +105,7 @@ testDoc = Document
                      (List
                         (OrderedList (Level 2) Nothing)
                         [ ListItem Nothing
-                            [ Block mempty (Just ((BlockTitle [Inline mempty (Str "The title")])))
+                            [ Block mempty (Just (BlockTitle [Inline mempty (Str "The title")]))
                                 (Paragraph
                                    [ Inline mempty (Bold [ Inline mempty (Str "contents") ]) ])
                             ]
@@ -155,7 +155,7 @@ mapInlineTest = testCase "mapInlines" $ do
                          (List
                             (OrderedList (Level 2) Nothing)
                             [ ListItem Nothing
-                                [ Block mempty (Just ((BlockTitle [Inline mempty (Str "X")])))
+                                [ Block mempty (Just (BlockTitle [Inline mempty (Str "X")]))
                                     (Paragraph
                                        [ Inline mempty (Bold [ Inline mempty (Str "X") ]) ])
                                 ]
@@ -185,7 +185,7 @@ mapBlockTest = testCase "mapBlocks" $ do
                          (List
                             (OrderedList (Level 2) Nothing)
                             [ ListItem Nothing
-                                [ Block mempty (Just ((BlockTitle [Inline mempty (Str "The title")])))
+                                [ Block mempty (Just (BlockTitle [Inline mempty (Str "The title")]))
                                     ThematicBreak
                                 ]
                             ])
