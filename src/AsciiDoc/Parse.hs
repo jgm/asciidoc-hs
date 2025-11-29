@@ -1215,23 +1215,27 @@ pAttributes = do
   pure $ as <> Attr positional (M.fromList kvs)
 
 pAttribute :: P (Either Text (Text,Text))
-pAttribute = pKeyValue <|> pPositional
- where
-   pKeyValue = do
-     k <- takeWhile1 (\c -> c /= ',' && c /= ']' && c /= '=')
-     vchar '=' *> (Right . (k,) <$> pAttributeValue)
-   pPositional = do
-     v <- pAttributeValue
-     mbc <- peekChar
-     case mbc of
-       Just ',' -> pure ()
-       _ -> guard $ not $ T.null v
-     pure $ Left v
+pAttribute = (Right <$> pKeyValue) <|> (Left <$> pPositional)
+
+pKeyValue :: P (Text, Text)
+pKeyValue = do
+  k <- takeWhile1 (\c -> c /= ',' && c /= ']' && c /= '=')
+  vchar '=' *> ((k,) <$> pAttributeValue)
+
+pPositional :: P Text
+pPositional = do
+  v <- pAttributeValue
+  mbc <- peekChar
+  case mbc of
+    Just ',' -> pure ()
+    _ -> guard $ not $ T.null v
+  pure v
 
 pAttributeValue :: P Text
 pAttributeValue = pQuotedAttr <|> pBareAttributeValue
  where
-   pBareAttributeValue = T.strip <$> takeWhile (\c -> c /= ',' && c /= ']')
+   pBareAttributeValue =
+     T.strip <$> takeWhile (\c -> c /= ',' && c /= ']')
    pQuotedAttr = do
      vchar '"'
      result <- many (satisfy (/='"') <|> (vchar '\\' *> satisfy (/='"')))
