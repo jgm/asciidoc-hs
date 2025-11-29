@@ -104,9 +104,12 @@ resolvePath parentPath fp
 
 --- Wrapped parser type:
 
-newtype P a = P { unP :: ReaderT ParserConfig A.Parser a }
+newtype P a = P { unP :: ReaderT ParserConfig (StateT ParserState A.Parser) a }
   deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
-            MonadFail, MonadReader ParserConfig)
+            MonadFail, MonadReader ParserConfig, MonadState ParserState)
+
+data ParserState = ParserState ()
+        deriving (Show)
 
 data ParserConfig = ParserConfig
                     { filePath :: FilePath
@@ -119,11 +122,13 @@ data ParseError = ParseError { errorPosition :: Int
                              } deriving (Show)
 
 parse :: P a -> FilePath -> T.Text -> Either ParseError a
-parse p fp t = go $ A.parse (runReaderT (unP p)
-                             ParserConfig{ filePath = fp
-                                         , blockContexts = []
-                                         , hardBreaks = False
-                                         }) t
+parse p fp t = go $ A.parse (evalStateT
+                             ( runReaderT (unP p)
+                                ParserConfig{ filePath = fp
+                                            , blockContexts = []
+                                            , hardBreaks = False
+                                            } )
+                                (ParserState ())) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
   go (A.Partial continue) = go (continue "")
@@ -140,7 +145,7 @@ withHardBreaks :: P a -> P a
 withHardBreaks = localP (\conf -> conf{ hardBreaks = True })
 
 liftP :: A.Parser a -> P a
-liftP = P . lift
+liftP = P . lift . lift
 
 vchar :: Char -> P ()
 vchar = liftP . void . A.char
@@ -169,7 +174,8 @@ isEndOfLine = A.isEndOfLine
 match :: P a -> P (T.Text, a)
 match p = P $ do
   parseInfo <- ask
-  lift $ A.match (runReaderT (unP p) parseInfo)
+  parserState <- get
+  lift . lift $ A.match (evalStateT (runReaderT (unP p) parseInfo) parserState)
 
 string :: T.Text -> P T.Text
 string = liftP . A.string
