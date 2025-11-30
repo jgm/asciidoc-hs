@@ -34,5 +34,3 @@ The user must supply a function to retrieve the contents of an
 included file and to raise an error. An AST is returned.
 FromJSON instances are defined, so the AST may be rendered (and
 read from) JSON.
-
-

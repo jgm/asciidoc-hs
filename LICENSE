@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --
 
-The asciidoc content of most of the test cases in `test/golden`
+The asciidoc content of the test cases in `test/asciidoctor`
 comes from https://github.com/asciidoctor/asciidoctor-doctest.
 It is governed by this license:
 
