@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               asciidoc
-version:            0.1.0.0
+version:            0.1
 synopsis:           AsciiDoc parser.
 description:        A parser for AsciiDoc syntax.
 license:            BSD-3-Clause
