@@ -99,7 +99,8 @@ parseDocument getFileContents raiseError path t =
 -- Leaves absolute paths alone.
 resolvePath :: FilePath -> FilePath -> FilePath
 resolvePath parentPath fp
-  | isRelative fp = takeDirectory parentPath </> fp
+  | isRelative fp =
+      normalise (takeDirectory parentPath </> fp)
   | otherwise = fp
 
 --- Wrapped parser type:
