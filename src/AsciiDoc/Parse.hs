@@ -19,7 +19,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import Data.Text (Text)
-import Data.List (foldl', intersperse)
+import Data.List (foldl', intersperse, isPrefixOf)
 import qualified Data.Attoparsec.Text as A
 import System.FilePath
 import Control.Applicative
@@ -137,7 +137,10 @@ parse' :: ParserConfig -> ParserState
 parse' cfg st p t =
   go $ A.parse (evalStateT ( runReaderT (unP p) cfg ) st) t
  where
-  go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i) msg
+  go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i)
+                             $ if "endOfInput" `isPrefixOf` msg
+                                  then "Unexpected " <> show (T.take 20 i)
+                                  else msg
   go (A.Partial continue) = go (continue "")
   go (A.Done _i r) = Right r
 
