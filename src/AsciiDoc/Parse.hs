@@ -109,10 +109,14 @@ newtype P a = P { unP :: ReaderT ParserConfig (StateT ParserState A.Parser) a }
   deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
             MonadFail, MonadReader ParserConfig, MonadState ParserState)
 
-newtype ParserState = ParserState
+data ParserState = ParserState
                      { counterMap :: M.Map Text (CounterType, Int)
+                     , docAttrs :: M.Map Text Text
                      }
         deriving (Show)
+
+defaultDocAttrs :: M.Map Text Text
+defaultDocAttrs = M.insert "sectids" "" mempty
 
 data ParserConfig = ParserConfig
                     { filePath :: FilePath
@@ -129,7 +133,9 @@ parse p fp = parse' (ParserConfig{ filePath = fp
                                  , blockContexts = []
                                  , hardBreaks = False
                                  })
-                    (ParserState { counterMap = mempty })
+                    (ParserState { counterMap = mempty
+                                 , docAttrs = defaultDocAttrs
+                                 })
                     p
 
 parse' :: ParserConfig -> ParserState
@@ -241,24 +247,23 @@ data BlockContext =
 pDocument :: P Document
 pDocument = do
   meta <- pDocumentHeader
-  let minSectionLevel = case M.lookup "doctype" (docAttributes meta) of
+  attr' <- gets docAttrs
+  let minSectionLevel = case M.lookup "doctype" attr' of
                           Just "book" -> 0
                           _ -> 1
-  bs <- (case M.lookup "hardbreaks-option" (docAttributes meta) of
+  bs <- (case M.lookup "hardbreaks-option" attr' of
             Just "" -> withHardBreaks
             _ -> id) $
         withBlockContext (SectionContext (minSectionLevel - 1)) (many pBlock)
   skipWhile isSpace
   endOfInput
-  pure $ Document { docMeta = meta , docBlocks = bs }
+  attr <- gets docAttrs
+  pure $ Document { docMeta = meta{ docAttributes = attr } , docBlocks = bs }
 
 pDocumentHeader :: P Meta
 pDocumentHeader = do
-  let handleAttr m (Left k) = M.delete k m
-      handleAttr m (Right (k,v)) = M.insert k v m
-  let defaultDocAttrs = M.insert "sectids" "" mempty
   skipBlankLines
-  topattrs <- foldl' handleAttr defaultDocAttrs <$> many pDocAttribute
+  many pDocAttribute
   skipBlankLines
   (title, titleAttr) <- option ([], Nothing) $ do
     (_,titleAttr) <- pTitlesAndAttributes
@@ -272,12 +277,13 @@ pDocumentHeader = do
   revision <- if null title
                  then pure Nothing
                  else optional pDocumentRevision
-  attrs <- foldl' handleAttr topattrs <$> many pDocAttribute
+  many pDocAttribute
   pure $ Meta{ docTitle = title
              , docTitleAttributes = titleAttr
              , docAuthors = authors
              , docRevision = revision
-             , docAttributes = attrs }
+             , docAttributes = mempty }
+              -- docAttributes this gets added at the end from docAttrs in state
 
 pDocumentTitle :: P [Inline]
 pDocumentTitle = do
@@ -324,18 +330,18 @@ pLine :: P Text
 pLine = takeWhile (not . isEndOfLine) <* (endOfLine <|> endOfInput)
 
 
--- Left key unsets key
--- Right (key, val) sets key
-pDocAttribute :: P (Either Text (Text, Text))
+pDocAttribute :: P ()
 pDocAttribute = do
   vchar ':'
   unset <- option False $ True <$ vchar '!'
   k <- pDocAttributeName
   vchar ':'
   v <- pLineWithEscapes
-  pure $ if unset
-            then Left k
-            else Right (k,v)
+  modify $ \s ->
+    s{ docAttrs =
+         if unset
+            then M.delete k (docAttrs s)
+            else M.insert k v (docAttrs s) }
 
 pDocAttributeName :: P Text
 pDocAttributeName = do
