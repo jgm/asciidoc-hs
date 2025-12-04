@@ -263,7 +263,7 @@ pDocument = do
 pDocumentHeader :: P Meta
 pDocumentHeader = do
   skipBlankLines
-  many pDocAttribute
+  skipMany pDocAttribute
   skipBlankLines
   (title, titleAttr) <- option ([], Nothing) $ do
     (_,titleAttr) <- pTitlesAndAttributes
@@ -277,7 +277,7 @@ pDocumentHeader = do
   revision <- if null title
                  then pure Nothing
                  else optional pDocumentRevision
-  many pDocAttribute
+  skipMany pDocAttribute
   pure $ Meta{ docTitle = title
              , docTitleAttributes = titleAttr
              , docAuthors = authors
@@ -389,7 +389,15 @@ parseWith p t = do
       pure x
 
 parseBlocks :: Text -> P [Block]
-parseBlocks = parseWith (many pBlock) . (<> "\n") . T.strip
+parseBlocks = parseWith pBlocks . (<> "\n") . T.strip
+
+pBlocks :: P [Block]
+pBlocks = do
+  bs <- many pBlock
+  skipBlankLines
+  skipMany pDocAttribute
+  skipBlankLines
+  pure bs
 
 parseAsciidoc :: Text -> P Document
 parseAsciidoc = parseWith pDocument . (<> "\n") . T.strip
@@ -411,11 +419,13 @@ pBlock :: P Block
 pBlock = do
   contexts <- asks blockContexts
   skipBlankLines
+  skipMany pDocAttribute
+  skipBlankLines
   (mbtitle, attr) <- pTitlesAndAttributes
+  skipMany (pCommentBlock attr)
   case contexts of
     ListContext{} : _ -> skipWhile (== ' ')
     _ -> pure ()
-  skipMany (pCommentBlock attr)
   let hardbreaks =
        case attr of
           Attr _ kvs

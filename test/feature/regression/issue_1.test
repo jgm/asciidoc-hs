@@ -1,0 +1,23 @@
+= Test
+
+:doc_attr: bar
+doc_attr = {doc_attr}
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = [ Inline mempty (Str "Test") ]
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList [ ( "doc_attr" , "bar" ) , ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "doc_attr = ") , Inline mempty (Str "bar") ])
+      ]
+  }

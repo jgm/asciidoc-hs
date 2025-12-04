@@ -13,6 +13,7 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 extra-source-files: test/asciidoctor/**/*.test
                     test/feature/**/*.test
+                    test/regression/*.test
                     test/feature/include/**/*.adoc
 
 Source-repository head

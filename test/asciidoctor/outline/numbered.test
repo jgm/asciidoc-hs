@@ -42,12 +42,7 @@ Document
           Attr
           ( [] , fromList [ ( "id" , "_unnumbered_section" ) ] )
           Nothing
-          (Section
-             (Level 1)
-             [ Inline mempty (Str "Unnumbered Section") ]
-             [ Block
-                 mempty Nothing (Paragraph [ Inline mempty (Str ":numbered:") ])
-             ])
+          (Section (Level 1) [ Inline mempty (Str "Unnumbered Section") ] [])
       , Block
           Attr
           ( [] , fromList [ ( "id" , "_section_2" ) ] )
