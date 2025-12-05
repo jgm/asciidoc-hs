@@ -20,9 +20,11 @@ main :: IO ()
 main = do
   asciidoctorTests <- goldenTests "asciidoctor"
   featureTests <- goldenTests "feature"
+  regressionTests <- goldenTests "regression"
   defaultMain $ testGroup "Tests"
     [ testGroup "Asciidoctor" asciidoctorTests
     , testGroup "Feature" featureTests
+    , testGroup "Regression" regressionTests
     , testGroup "Generic"
        [ foldInlineTest
        , foldBlockTest
@@ -33,18 +35,21 @@ main = do
 
 goldenTests :: FilePath -> IO [TestTree]
 goldenTests fp = do
-  files <- findTestFiles ("test" </> fp)
-  pure $ map (\(category, fs) ->
-          testGroup category (map toGoldenTest fs)) files
+  (toplevel, groups) <- findTestFiles ("test" </> fp)
+  pure $ map toGoldenTest toplevel ++
+         map (\(category, fs) ->
+          testGroup category (map toGoldenTest fs)) groups
 
 -- Find all .test files in a directory
-findTestFiles :: FilePath -> IO [(FilePath, [FilePath])]
+findTestFiles :: FilePath -> IO ([FilePath], [(FilePath, [FilePath])])
 findTestFiles baseDir = do
-  categories <- listDirectory baseDir
+  fs <- listDirectory baseDir
   let go f = do
         xs <- map ((baseDir </> f) </>) <$> listDirectory (baseDir </> f)
         return (f, sort $ filter ((== ".test") . takeExtension) xs)
-  mapM go categories
+  categories <- mapM go (filter (null . takeExtension) fs)
+  let toplevel = map (baseDir </>) $ filter ((== ".test") . takeExtension) fs
+  return (toplevel, categories)
 
 toGoldenTest :: FilePath -> TestTree
 toGoldenTest fp =
