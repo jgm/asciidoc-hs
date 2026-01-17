@@ -1,0 +1,79 @@
+Words _italicised_ in brackets are ++[++_broken_++]++.
+
+But this [_works_], ++[++__this__++]++ too, and ++[++this _also_ works.++]++
+
+Words in *bold* in brackets are ++{++*broken*++}++.
+
+But this {*works*}, ++{++**this**++}++ too, and ++{++this *also* works.++}++
+
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Words ")
+             , Inline mempty (Italic [ Inline mempty (Str "italicised") ])
+             , Inline mempty (Str " in brackets are ")
+             , Inline mempty (Str "[")
+             , Inline mempty (Italic [ Inline mempty (Str "broken") ])
+             , Inline mempty (Str "]")
+             , Inline mempty (Str ".")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "But this [")
+             , Inline mempty (Italic [ Inline mempty (Str "works") ])
+             , Inline mempty (Str "], ")
+             , Inline mempty (Str "[")
+             , Inline mempty (Italic [ Inline mempty (Str "this") ])
+             , Inline mempty (Str "]")
+             , Inline mempty (Str " too, and ")
+             , Inline mempty (Str "[")
+             , Inline mempty (Str "this ")
+             , Inline mempty (Italic [ Inline mempty (Str "also") ])
+             , Inline mempty (Str " works.")
+             , Inline mempty (Str "]")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Words in ")
+             , Inline mempty (Bold [ Inline mempty (Str "bold") ])
+             , Inline mempty (Str " in brackets are ")
+             , Inline mempty (Str "{")
+             , Inline mempty (Bold [ Inline mempty (Str "broken") ])
+             , Inline mempty (Str "}")
+             , Inline mempty (Str ".")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "But this {")
+             , Inline mempty (Bold [ Inline mempty (Str "works") ])
+             , Inline mempty (Str "}, ")
+             , Inline mempty (Str "{")
+             , Inline mempty (Bold [ Inline mempty (Str "this") ])
+             , Inline mempty (Str "}")
+             , Inline mempty (Str " too, and ")
+             , Inline mempty (Str "{")
+             , Inline mempty (Str "this ")
+             , Inline mempty (Bold [ Inline mempty (Str "also") ])
+             , Inline mempty (Str " works.")
+             , Inline mempty (Str "}")
+             ])
+      ]
+  }

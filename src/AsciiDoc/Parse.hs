@@ -1345,7 +1345,7 @@ pShorthandAttribute = do
 pInline :: [Char] -> P Inline
 pInline prevChars = do
   let maybeUnconstrained = case prevChars of
-                              (d:_) -> isSpace d || isPunctuation d
+                              (d:_) -> isSpace d || isPunctuation d || d == '+'
                               [] -> True
   let inMatched = pInMatched maybeUnconstrained
   skipMany pLineComment
@@ -1430,7 +1430,7 @@ pInMatched maybeUnconstrained delim attr toInlineType = do
     mbc <- peekChar
     case mbc of
       Nothing -> pure ()
-      Just c -> guard $ isSpace c || isPunctuation c
+      Just c -> guard $ isSpace c || isPunctuation c || c == '+'
   Inline attr <$> toInlineType (T.pack cs)
 
 pInlineAnchor :: P Inline
