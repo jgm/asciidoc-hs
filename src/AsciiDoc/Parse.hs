@@ -1551,12 +1551,11 @@ inlineMacros = M.fromList
                     then pure [Inline mempty (Str target)]
                     else parseInlines description)
   , ("footnote", \target -> do
-      attr <- pAttributes
-      let (contents, attr') = extractDescription attr
-          fnid = if target == mempty
+      ils <- pBracketedText >>= parseInlines
+      let fnid = if target == mempty
                     then Nothing
                     else Just (FootnoteId target)
-      Inline attr' . Footnote fnid <$> parseInlines contents)
+      pure $ Inline mempty (Footnote fnid ils))
   , ("footnoteref", \_ -> do
       (Attr ps kvs) <- pAttributes
       (target, contents) <- case ps of
@@ -1599,6 +1598,8 @@ pBracketedText =
   vchar '[' *>
     (mconcat <$> many
          (T.pack <$> some ((vchar '\\' *> char ']') <|>
+                           (vchar '+' *> vchar '+' *> char ']'
+                             <* vchar '+' <* vchar '+') <|>
                  satisfy (\c -> c /= ']' && not (isEndOfLine c)) <|>
                  (' ' <$ (vchar '\\' <* endOfLine)))
           <|> ((\x -> "[" <> x <> "]") <$> pBracketedText)))

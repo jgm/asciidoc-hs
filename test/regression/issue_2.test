@@ -1,0 +1,60 @@
+Textfootnote:[Commas break foonotes, do you see?].
+
+Other textfootnote:[This is the same for closing ++[++brackets++]++,
+isn’t it?].
+
+And anotherfootnote:[Some dots do as well. But not all of them.], and a
+final onefootnote:[S. Jackson.].
+
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Text")
+             , Inline
+                 mempty
+                 (Footnote
+                    Nothing
+                    [ Inline mempty (Str "Commas break foonotes, do you see?") ])
+             , Inline mempty (Str ".")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (Str "Other textfootnote:[This is the same for closing ")
+             , Inline mempty (Str "[")
+             , Inline mempty (Str "brackets")
+             , Inline mempty (Str "]")
+             , Inline mempty (Str ",\nisn\8217t it?].")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "And another")
+             , Inline
+                 mempty
+                 (Footnote
+                    Nothing
+                    [ Inline mempty (Str "Some dots do as well. But not all of them.")
+                    ])
+             , Inline mempty (Str ", and a\nfinal one")
+             , Inline
+                 mempty (Footnote Nothing [ Inline mempty (Str "S. Jackson.") ])
+             , Inline mempty (Str ".")
+             ])
+      ]
+  }
