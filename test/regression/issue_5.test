@@ -1,0 +1,116 @@
+<<<
+|===
+|col1|col2
+|11 .2+|12|13
+|21 .2+|22|23
+|===
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing PageBreak
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "col1") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "col2") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "11") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "12") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 2
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "13") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "21") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "22") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 2
+                     }
+                 ]
+             ]
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "23") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ]))
+      ]
+  }

@@ -971,16 +971,16 @@ pTable mbtitle (Attr ps kvs) = do
             -- if there are rowspans from rows above, we need to skip some:
             let mbspecs' = case mbspecs of
                              Nothing -> Nothing
-                             Just specs' -> Just [s | (s,0) <- zip specs' rowspans]
+                             Just specs' -> Just [s | (s,n) <- zip specs' rowspans, n <= 0]
             row@(TableRow cells) <- pTableRow tableOpts mbspecs'
             let numcols = sum (map cellColspan cells)
             let specs = fromMaybe (replicate numcols defaultColumnSpec) mbspecs
             -- now, update rowspans in light of new row
             let updateRowspans [] rs = rs
                 updateRowspans (c:cs) rs =
-                  map (+ (cellRowspan c - 1)) (take (cellColspan c) rs)
+                  map (+ (cellRowspan c)) (take (cellColspan c) rs)
                   ++ updateRowspans cs (drop (cellColspan c) rs)
-            let rowspans' = updateRowspans cells rowspans
+            let rowspans' = updateRowspans cells (map (\x -> x - 1) rowspans)
             (\(rows, colspecs') -> (row:rows, case rows of
                                                  [] -> specs
                                                  _ -> colspecs'))
