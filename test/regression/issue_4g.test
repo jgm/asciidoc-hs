@@ -1,0 +1,32 @@
+<<<
+Asciidoc text followed by a block comment.
+
+////
+BLOCK COMMENT
+////
+
+Followed by a new paragraph.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing PageBreak
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "Asciidoc text followed by a block comment.")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (Str "Followed by a new paragraph.") ])
+      ]
+  }

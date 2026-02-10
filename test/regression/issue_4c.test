@@ -1,0 +1,26 @@
+<<<
+Asciidoc text followed by a line comment
+// LINE COMMENT
+followed by text.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing PageBreak
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str "Asciidoc text followed by a line comment\nfollowed by text.")
+             ])
+      ]
+  }

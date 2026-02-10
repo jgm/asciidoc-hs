@@ -12,7 +12,7 @@ module AsciiDoc.Parse
 
 import Prelude hiding (takeWhile)
 import Text.HTML.TagSoup.Entity (lookupNamedEntity)
-import Data.Maybe (isNothing, listToMaybe, fromMaybe)
+import Data.Maybe (isNothing, listToMaybe, fromMaybe, catMaybes)
 import Data.Bifunctor (first)
 import Data.Either (lefts, rights)
 import qualified Data.Map as M
@@ -254,7 +254,7 @@ pDocument = do
   bs <- (case M.lookup "hardbreaks-option" attr' of
             Just "" -> withHardBreaks
             _ -> id) $
-        withBlockContext (SectionContext (minSectionLevel - 1)) (many pBlock)
+        withBlockContext (SectionContext (minSectionLevel - 1)) pBlocks
   skipWhile isSpace
   endOfInput
   attr <- gets docAttrs
@@ -371,8 +371,8 @@ skipBlankLines :: P ()
 skipBlankLines = do
   contexts <- asks blockContexts
   case contexts of
-    ListContext{} : _ -> void $ many $ vchar '+' *> pBlankLine
-    _ -> void $ many pBlankLine
+    ListContext{} : _ -> skipMany $ vchar '+' *> pBlankLine
+    _ -> skipMany pBlankLine
 
 pBlankLine :: P ()
 pBlankLine = takeWhile (\c -> c == ' ' || c == '\t') *> (pLineComment <|> endOfLine)
@@ -397,7 +397,7 @@ pBlocks = do
   skipBlankLines
   skipMany pDocAttribute
   skipBlankLines
-  pure bs
+  pure $ catMaybes bs
 
 parseAsciidoc :: Text -> P Document
 parseAsciidoc = parseWith pDocument . (<> "\n") . T.strip
@@ -415,14 +415,13 @@ parseParagraphs = parseWith (many pParagraph) . (<> "\n") . T.strip
 parseInlines :: Text -> P [Inline]
 parseInlines = parseWith pInlines . T.strip
 
-pBlock :: P Block
+pBlock :: P (Maybe Block)
 pBlock = do
   contexts <- asks blockContexts
   skipBlankLines
   skipMany pDocAttribute
   skipBlankLines
   (mbtitle, attr) <- pTitlesAndAttributes
-  skipMany (pCommentBlock attr)
   case contexts of
     ListContext{} : _ -> skipWhile (== ' ')
     _ -> pure ()
@@ -432,7 +431,8 @@ pBlock = do
             | Just opts <- M.lookup "options" kvs
               -> "hardbreaks" `T.isInfixOf` opts
           _ -> False
-  (if hardbreaks then withHardBreaks else id) $
+  (Nothing <$ pCommentBlock attr) <|> fmap Just
+    ((if hardbreaks then withHardBreaks else id) $
         pBlockMacro mbtitle attr
     <|> pDiscreteHeading mbtitle attr
     <|> pExampleBlock mbtitle attr
@@ -454,7 +454,7 @@ pBlock = do
             , pDefinitionList
             , pIndentedLiteral
             , pPara
-            ]
+            ])
 
 
 pIndentedLiteral :: P BlockType
@@ -556,7 +556,7 @@ pSection = do
       guard (lev > sectionLevel && lev >= 0 && lev <= 5)
       vchar ' '
       title <- pLine >>= parseInlines
-      contents <- withBlockContext (SectionContext lev) $ many pBlock
+      contents <- withBlockContext (SectionContext lev) pBlocks
       -- note: we use sectionLevel, not lev, so in improperly nested content, e.g.,
       -- == foo
       -- ==== bar
@@ -629,7 +629,7 @@ pDefinitionListItem = do
   let newContext = case contexts of
                       ListContext ':' n : _ -> ListContext ':' (n + 1)
                       _ -> ListContext ':' 1
-  defn <- withBlockContext newContext (many pBlock)
+  defn <- withBlockContext newContext pBlocks
   void $ many pBlankLine
   pure (term, defn)
 
@@ -700,7 +700,7 @@ pListItem :: P ListItem
 pListItem = do
   mbCheckboxState <- optional pCheckbox
   skipWhile (==' ')
-  bs <- many pBlock
+  bs <- pBlocks
   pure $ ListItem mbCheckboxState bs
 
 pDelimitedLiteralBlock :: Char -> Int -> P [T.Text]
@@ -716,7 +716,7 @@ pDelimitedBlock c minimumNumber = do
   guard $ len >= minimumNumber
   let endFence = count len (vchar c) *> pBlankLine
   withBlockContext (DelimitedContext c len) $
-    manyTill pBlock endFence
+    catMaybes <$> manyTill pBlock endFence
 
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
 pPassBlock mbtitle attr = do
@@ -905,6 +905,7 @@ newlinesToHardbreaks (x : xs) = x : newlinesToHardbreaks xs
 
 pNormalLine :: P Text
 pNormalLine = do
+  notFollowedBy (string "////" *> pBlankLine) -- block comment
   t <- pLine
   fp <- asks filePath
   guard $ not $ T.all (\c -> c == ' ' || c == '\t') t
@@ -1289,17 +1290,18 @@ pAttributeValue = pQuotedAttr <|> pBareAttributeValue
      pure $ T.pack result
 
 pInlines' :: [Char] -> P [Inline]
-pInlines' cs =
-  (do il' <- pInline cs
-      let il = case il' of
-                 Inline (Attr ps kvs) (Span ils)
-                   | Nothing <- M.lookup "role" kvs
-                   -> Inline (Attr ps kvs) (Highlight ils)
-                 _ -> il'
-      addStr . (il:) <$> pInlines' [])
-  <|> (do c <- anyChar
-          pInlines' (c:cs))
-  <|> (addStr [] <$ endOfInput)
+pInlines' cs = do
+  (pLineComment *> pInlines' cs)
+    <|> (do il' <- pInline cs
+            let il = case il' of
+                       Inline (Attr ps kvs) (Span ils)
+                         | Nothing <- M.lookup "role" kvs
+                         -> Inline (Attr ps kvs) (Highlight ils)
+                       _ -> il'
+            addStr . (il:) <$> pInlines' [])
+    <|> (do c <- anyChar
+            pInlines' (c:cs))
+    <|> (addStr [] <$ endOfInput)
  where
   addStr = case cs of
               [] -> id
@@ -1348,7 +1350,6 @@ pInline prevChars = do
                               (d:_) -> isSpace d || isPunctuation d || d == '+'
                               [] -> True
   let inMatched = pInMatched maybeUnconstrained
-  skipMany pLineComment
   (do attr <- pFormattedTextAttributes <|> pure mempty
       c <- peekChar'
       case c of
@@ -1391,7 +1392,7 @@ pTriplePassthrough = Inline mempty . Passthrough . T.pack
     <$> (string "+++" *> manyTill anyChar (string "+++"))
 
 pLineComment :: P ()
-pLineComment = string "//" *> skipWhile (== ' ') *> void pLine
+pLineComment = string "//" *> satisfy (\c -> c == ' ' || c == '\t') *> void pLine
 
 pCrossReference :: P Inline
 pCrossReference = do
