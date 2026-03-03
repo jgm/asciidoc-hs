@@ -1601,7 +1601,7 @@ pBracketedText =
          (T.pack <$> some ((vchar '\\' *> char ']') <|>
                            (vchar '+' *> vchar '+' *> char ']'
                              <* vchar '+' <* vchar '+') <|>
-                 satisfy (\c -> c /= ']' && not (isEndOfLine c)) <|>
+                 satisfy (\c -> c /= ']' && c /= '[' && not (isEndOfLine c)) <|>
                  (' ' <$ (vchar '\\' <* endOfLine)))
           <|> ((\x -> "[" <> x <> "]") <$> pBracketedText)))
     <* vchar ']'

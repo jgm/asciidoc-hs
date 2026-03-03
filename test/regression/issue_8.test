@@ -1,0 +1,40 @@
+A sentence.footnote:[See https://pandoc.org/MANUAL.html[manual] and other https://pandoc.org/demos.html[demos].]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "A sentence.")
+             , Inline
+                 mempty
+                 (Footnote
+                    Nothing
+                    [ Inline mempty (Str "See ")
+                    , Inline
+                        mempty
+                        (Link
+                           URLLink
+                           (Target "https://pandoc.org/MANUAL.html")
+                           [ Inline mempty (Str "manual") ])
+                    , Inline mempty (Str " and other ")
+                    , Inline
+                        mempty
+                        (Link
+                           URLLink
+                           (Target "https://pandoc.org/demos.html")
+                           [ Inline mempty (Str "demos") ])
+                    , Inline mempty (Str ".")
+                    ])
+             ])
+      ]
+  }
