@@ -1,0 +1,12 @@
+[source, cpp]
+....
+#include "MyFile.h"
+
+MyClass::MyClass(LibParent *parent,
+    LibCollectionPtr inputCollection)
+    : LibClass(parent) {
+    
+    myMemberFn(inputCollection, this->getLibItem());
+    
+}
+....

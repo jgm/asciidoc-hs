@@ -13,6 +13,7 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 extra-source-files: test/asciidoctor/**/*.test
                     test/regression/*.test
+                    test/regression/issue_9_include.adoc
                     test/feature/**/*.test
                     test/feature/include/**/*.adoc
 

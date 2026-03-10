@@ -1,0 +1,27 @@
+include::issue_9_include.adoc[]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Include
+             "test/regression/issue_9_include.adoc"
+             (Just
+                [ Block
+                    Attr
+                    ( [ "source" , "cpp" ] , fromList [] )
+                    Nothing
+                    (LiteralBlock
+                       "#include \"MyFile.h\"\n\nMyClass::MyClass(LibParent *parent,\n    LibCollectionPtr inputCollection)\n    : LibClass(parent) {\n    \n    myMemberFn(inputCollection, this->getLibItem());\n    \n}\n")
+                ]))
+      ]
+  }

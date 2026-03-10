@@ -707,7 +707,7 @@ pDelimitedLiteralBlock :: Char -> Int -> P [T.Text]
 pDelimitedLiteralBlock c minimumNumber = do
   len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
-  let endFence = count len (vchar c) *> pBlankLine
+  let endFence = count len (vchar c) *> (pBlankLine <|> endOfInput)
   manyTill pLine endFence
 
 pDelimitedBlock :: Char -> Int -> P [Block]
