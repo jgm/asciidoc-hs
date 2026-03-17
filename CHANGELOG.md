@@ -1,5 +1,15 @@
 # Revision history for asciidoc-hs
 
+## 0.1.0.2 -- 2026-03-17
+
+  * Allow fenced constructions to end with end-of-input (#9).
+
+  * Fix issue in parsing bracketed arguments (#8).
+
+  * Fix bug in table parsing with rowspans (#5).
+
+  * Improved parsing of line and block comments (#4).
+
 ## 0.1.0.1 -- 2026-02-01
 
   * Fix character escaping issue (#3). Unconstrained forms of
