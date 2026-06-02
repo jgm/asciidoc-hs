@@ -5,6 +5,8 @@
   * Open block delimiter is exactly two `--` (#12).
     Fixes  a performance bug with `---` thematic breaks.
 
+  * Improve parsing of link descriptions (#6).
+
 ## 0.1.0.2 -- 2026-03-17
 
   * Allow fenced constructions to end with end-of-input (#9).
