@@ -718,6 +718,13 @@ pDelimitedBlock c minimumNumber = do
   withBlockContext (DelimitedContext c len) $
     catMaybes <$> manyTill pBlock endFence
 
+pDelimitedBlockExact :: Char -> Int -> P [Block]
+pDelimitedBlockExact c exactNumber = do
+  let fence = count exactNumber (vchar c) *> pBlankLine
+  fence
+  withBlockContext (DelimitedContext c exactNumber) $
+    catMaybes <$> manyTill pBlock fence
+
 pPassBlock :: Maybe BlockTitle -> Attr -> P Block
 pPassBlock mbtitle attr = do
   t <- T.unlines <$> pDelimitedLiteralBlock '+' 4
@@ -849,10 +856,9 @@ pQuoteBlock _ _ = mzero
 
 pOpenBlock :: Maybe BlockTitle -> Attr -> P Block
 pOpenBlock mbtitle attr = Block attr mbtitle <$>
-  ((OpenBlock <$> pDelimitedBlock '-' 2)
+  ((OpenBlock <$> pDelimitedBlockExact '-' 2)
    <|>
-  (QuoteBlock Nothing <$>
-     (pDelimitedBlock '-' 2 <|> pDelimitedBlock '_' 4)))
+  (QuoteBlock Nothing <$> (pDelimitedBlock '_' 4)))
 
 parseAdmonitionType :: T.Text -> Maybe AdmonitionType
 parseAdmonitionType t =
