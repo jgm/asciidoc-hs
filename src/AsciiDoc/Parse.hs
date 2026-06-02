@@ -1289,11 +1289,13 @@ pAttributeValue = pQuotedAttr <|> pBareAttributeValue
  where
    pBareAttributeValue =
      T.strip <$> takeWhile (\c -> c /= ',' && c /= ']')
-   pQuotedAttr = do
-     vchar '"'
-     result <- many (satisfy (/='"') <|> (vchar '\\' *> satisfy (/='"')))
-     vchar '"'
-     pure $ T.pack result
+
+pQuotedAttr :: P Text
+pQuotedAttr = do
+   vchar '"'
+   result <- many (satisfy (/='"') <|> (vchar '\\' *> satisfy (/='"')))
+   vchar '"'
+   pure $ T.pack result
 
 pInlines' :: [Char] -> P [Inline]
 pInlines' cs = do
@@ -1629,8 +1631,7 @@ pEmailAutolink = do
   c <- takeWhile1 isLetter
   guard $ let lc = T.length c in lc >= 2 && lc <= 5
   let email = a <> "@" <> b <> "." <> c
-  attr <- pAttributes <|> pure mempty
-  let (description, attr') = extractDescription attr
+  (description, attr') <- pLinkDescription <|> pure (mempty, mempty)
   Inline attr' . Link EmailLink (Target email)
            <$> if T.null description
                   then pure [Inline mempty (Str email)]
@@ -1660,12 +1661,29 @@ pAutolink = do
   url <- (scheme <>) . mconcat <$> some
           (urlChunk <|> (do Inline _ (Str t) <- pInMatched False '+' mempty (pure . Str)
                             pure t))
-  attr <- pAttributes <|> pure mempty
-  let (description, attr') = extractDescription attr
+  (description, attr') <- pLinkDescription <|> pure (mempty, mempty)
   Inline attr' . Link URLLink (Target url)
              <$> if T.null description
                     then pure [Inline mempty (Str url)]
                     else parseInlines description
+
+pLinkDescription :: P (Text, Attr)
+pLinkDescription = do
+  vchar '['
+  -- parse link description
+  let literalPart = takeWhile1 (\c -> c /= ']' && c /= ',' && c /= '=')
+  description <- option mempty $
+                    pQuotedAttr
+                <|> mconcat <$>
+                     many (literalPart
+                         <|> ("," <$ vchar ',' <* notFollowedBy pKeyValue))
+  -- parse (optional) attributes
+  kvs <- option []
+         (do unless (description == mempty) pComma
+             sepBy pKeyValue pComma <* option () pComma)
+  vchar ']'
+  pure (description, Attr mempty (M.fromList kvs))
+
 
 pBracedAutolink :: P Inline
 pBracedAutolink = vchar '<' *> pAutolink <* vchar '>'

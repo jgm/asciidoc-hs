@@ -1,0 +1,66 @@
+http://discuss.asciidoctor.org[asciidoctor.org,role="green"]
+
+http://discuss.asciidoctor.org["ascidoctor=cool"]
+
+http://example.com[A whole sentence, with comma and period.]
+
+http://example.com["with [brackets]",key=value]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "role" , "green" ) ] )
+                 (Link
+                    URLLink
+                    (Target "http://discuss.asciidoctor.org")
+                    [ Inline mempty (Str "asciidoctor.org") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Link
+                    URLLink
+                    (Target "http://discuss.asciidoctor.org")
+                    [ Inline mempty (Str "ascidoctor=cool") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Link
+                    URLLink
+                    (Target "http://example.com")
+                    [ Inline mempty (Str "A whole sentence, with comma and period.") ])
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 Attr
+                 ( [] , fromList [ ( "key" , "value" ) ] )
+                 (Link
+                    URLLink
+                    (Target "http://example.com")
+                    [ Inline mempty (Str "with [brackets]") ])
+             ])
+      ]
+  }
