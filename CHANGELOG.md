@@ -1,6 +1,6 @@
 # Revision history for asciidoc-hs
 
-## Unreleased
+## 0.1.0.4 -- 2026-08-11
 
   * Fix tracking of rowspans in table parsing (#13). Columns occupied
     by rowspans from previous rows were not skipped when recording the
