@@ -1,5 +1,17 @@
 # Revision history for asciidoc-hs
 
+## Unreleased
+
+  * Fix tracking of rowspans in table parsing (#13). Columns occupied
+    by rowspans from previous rows were not skipped when recording the
+    rowspans introduced by a new row, so tables with staggered rowspans
+    could fail to parse or be parsed incorrectly.
+
+  * Tables no longer have a footer by default (#13). Previously the
+    last row of every table was treated as a footer unless the
+    `nofooter` option was given. Now, as in Asciidoctor, a footer is
+    only created when the `footer` option is given.
+
 ## 0.1.0.3 -- 2026-06-02
 
   * Open block delimiter is exactly two `--` (#12).

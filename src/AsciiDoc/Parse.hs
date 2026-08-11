@@ -969,8 +969,7 @@ pTable mbtitle (Attr ps kvs) = do
                             , tableSeparator = mbsep
                             , tableHeader = "header" `elem` options ||
                                 "noheader" `notElem` options
-                            , tableFooter = "footer" `elem` options ||
-                                "nofooter" `notElem` options
+                            , tableFooter = "footer" `elem` options
                             }
   let getRows mbspecs rowspans = (([],[]) <$ pTableBorder) <|>
          do -- for this row, we modify the specs based on rowspans
@@ -981,12 +980,18 @@ pTable mbtitle (Attr ps kvs) = do
             row@(TableRow cells) <- pTableRow tableOpts mbspecs'
             let numcols = sum (map cellColspan cells)
             let specs = fromMaybe (replicate numcols defaultColumnSpec) mbspecs
-            -- now, update rowspans in light of new row
-            let updateRowspans [] rs = rs
-                updateRowspans (c:cs) rs =
-                  map (+ (cellRowspan c)) (take (cellColspan c) rs)
-                  ++ updateRowspans cs (drop (cellColspan c) rs)
-            let rowspans' = updateRowspans cells (map (\x -> x - 1) rowspans)
+            -- now, update rowspans in light of new row; the new row's
+            -- cells only occupy the columns that are not taken up by
+            -- rowspans from rows above (after decrementing, those
+            -- columns have a countdown >= 0), so we skip those:
+            let fillRowspans [] rs = rs
+                fillRowspans vs (r:rs)
+                  | r >= 0 = r : fillRowspans vs rs
+                fillRowspans (v:vs) (_:rs) = v : fillRowspans vs rs
+                fillRowspans _ [] = []
+            let newspans = concatMap
+                  (\c -> replicate (cellColspan c) (cellRowspan c - 1)) cells
+            let rowspans' = fillRowspans newspans (map (\x -> x - 1) rowspans)
             (\(rows, colspecs') -> (row:rows, case rows of
                                                  [] -> specs
                                                  _ -> colspecs'))

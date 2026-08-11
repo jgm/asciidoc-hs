@@ -178,23 +178,22 @@ Document
                      , cellRowspan = 1
                      }
                  ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Listing
+                                Nothing [ SourceLine "puts \"This is a source block!\"" [] ])
+                         ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
              ]
-             (Just
-                [ TableRow
-                    [ TableCell
-                        { cellContent =
-                            [ Block
-                                mempty
-                                Nothing
-                                (Listing
-                                   Nothing [ SourceLine "puts \"This is a source block!\"" [] ])
-                            ]
-                        , cellHorizAlign = Nothing
-                        , cellVertAlign = Nothing
-                        , cellColspan = 1
-                        , cellRowspan = 1
-                        }
-                    ]
-                ]))
+             Nothing)
       ]
   }
