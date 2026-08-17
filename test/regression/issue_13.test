@@ -1,3 +1,10 @@
+[options="noheader"]
+|===
+.2+|1,1 2+|1,2
+          |2,2 .2+|2,3
+ 2+|1,3
+|===
+
 [width="100%",cols="34%,33%,33%",options="noheader",]
 |===
 .2+|1,1 2+|1,2
@@ -24,6 +31,78 @@ Document
         }
   , docBlocks =
       [ Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "1,1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 2
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "1,2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 2
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "2,2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "2,3") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 2
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "1,3") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 2
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      , Block
           Attr
           ( [] , fromList [ ( "width" , "100%" ) ] )
           Nothing

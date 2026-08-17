@@ -1211,6 +1211,7 @@ toCellStyle _   = Nothing
 -- 2*.3+^.>s| duplicate 2x, rowspan 3, top align, right align, s style
 pCellSep :: Char -> P CellData
 pCellSep sep = do
+  skipWhile (\c -> c == ' ' || c == '\t')
   mult <- option 1 pMultiplier
   (colspan, rowspan) <- option (Nothing, Nothing) $ do
     a <- optional decimal
