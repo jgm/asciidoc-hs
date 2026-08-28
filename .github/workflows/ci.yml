@@ -11,11 +11,11 @@ jobs:
       matrix:
         versions:
           - ghc: '8.10'
-            cabal: '3.4'
+            cabal: 'latest'
           - ghc: '9.0'
-            cabal: '3.4'
+            cabal: 'latest'
           - ghc: '9.2'
-            cabal: '3.6'
+            cabal: 'latest'
           - ghc: '9.4'
             cabal: 'latest'
           - ghc: '9.6'
