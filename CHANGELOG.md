@@ -1,5 +1,9 @@
 # Revision history for asciidoc-hs
 
+## 0.1.0.5 -- 2026-08-27
+
+    Tables: skip whitespace before cell spec (#13).
+
 ## 0.1.0.4 -- 2026-08-11
 
   * Fix tracking of rowspans in table parsing (#13). Columns occupied
