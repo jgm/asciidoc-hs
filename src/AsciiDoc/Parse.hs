@@ -1190,14 +1190,36 @@ pTableCellPSV :: Maybe Char -> Bool -> [ColumnSpec] -> P [TableCell]
 pTableCellPSV mbsep allowNewlines colspecs = do
   let sep = fromMaybe '|' mbsep
   cellData <- pCellSep sep
-  t <- T.pack <$>
+  -- A cell separator match can only begin at the separator itself or
+  -- at one of the characters that may precede it in a cell spec
+  -- (whitespace, duplicate/span numbers, alignments, styles); a table
+  -- border only at its delimiter.  Runs of other characters can be
+  -- consumed at once, and the expensive lookahead for a separator or
+  -- border is only needed at characters that could begin one.
+  let couldStartCellSep c = c == sep || c == ' ' || c == '\t' ||
+        isDigit c || A.inClass ".<^>adehlms" c
+  let couldStartBorder c = c == '|' || c == ':' || c == ','
+  let isPlainCellChar c = not (couldStartCellSep c) &&
+        not (couldStartBorder c) && c /= '\\' && not (isEndOfLine c)
+  t <- mconcat <$>
          many
-          (notFollowedBy (void (pCellSep sep) <|> void pTableBorder) *>
-           ((vchar '\\' *> char sep)
-             <|> satisfy (not . isEndOfLine)
-             <|> if allowNewlines
-                    then satisfy isEndOfLine
-                    else satisfy isEndOfLine <* notFollowedBy (pCellSep sep)))
+          (takeWhile1 isPlainCellChar
+           <|>
+           (do mbc <- peekChar
+               case mbc of
+                 Nothing -> mzero
+                 Just c -> do
+                   when (couldStartCellSep c) $
+                     notFollowedBy (void (pCellSep sep))
+                   when (couldStartBorder c) $
+                     notFollowedBy (void pTableBorder)
+                   T.singleton <$>
+                     ((vchar '\\' *> char sep)
+                       <|> satisfy (not . isEndOfLine)
+                       <|> if allowNewlines
+                              then satisfy isEndOfLine
+                              else satisfy isEndOfLine
+                                     <* notFollowedBy (pCellSep sep))))
   let cell' = TableCell
                { cellContent = []
                , cellHorizAlign = cHorizAlign cellData
