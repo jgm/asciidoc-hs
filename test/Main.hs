@@ -31,6 +31,9 @@ main = do
        , mapInlineTest
        , mapBlockTest
        ]
+    , testGroup "AST"
+       [ metaSemigroupTest
+       ]
     ]
 
 goldenTests :: FilePath -> IO [TestTree]
@@ -89,6 +92,20 @@ ensureFinalNewline xs = case T.unsnoc xs of
   Just (_, '\n') -> xs
   _              -> xs <> "\n"
 
+
+metaSemigroupTest :: TestTree
+metaSemigroupTest = testCase "metaSemigroup" $ do
+  let attr1 = Attr ["one"] mempty
+  let attr2 = Attr ["two"] mempty
+  let meta1 = mempty{ docTitle = [Inline mempty (Str "First")]
+                    , docTitleAttributes = Just attr1 }
+  let meta2 = mempty{ docTitle = [Inline mempty (Str "Second")]
+                    , docTitleAttributes = Just attr2 }
+  -- title and its attributes are taken from the same document
+  docTitle (meta1 <> meta2) @?= [Inline mempty (Str "First")]
+  docTitleAttributes (meta1 <> meta2) @?= Just attr1
+  docTitle (mempty <> meta2) @?= [Inline mempty (Str "Second")]
+  docTitleAttributes (mempty <> meta2) @?= Just attr2
 
 testDoc :: Document
 testDoc = Document

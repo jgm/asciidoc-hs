@@ -120,7 +120,7 @@ instance Semigroup Meta where  -- left-biased
                   , docTitleAttributes =
                                case docTitle m1 of
                                  [] -> docTitleAttributes m2
-                                 _ -> docTitleAttributes m2
+                                 _ -> docTitleAttributes m1
                   , docAuthors = docAuthors m1 <> docAuthors m2
                   , docRevision = docRevision m1 `mplus` docRevision m2
                   , docAttributes = docAttributes m1 <> docAttributes m2
