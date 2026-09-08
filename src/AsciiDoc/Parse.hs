@@ -618,7 +618,12 @@ pDefinitionListItem = do
   let marker = (do t <- takeWhile1 (== ':')
                    case contexts of
                        ListContext ':' n : _ -> guard (T.length t == n + 2)
-                       _ -> guard (T.length t == 2))
+                       _ -> guard (T.length t == 2)
+                   -- The marker must be followed by a space or the end of
+                   -- the line, so that e.g. std::vector is not mistaken
+                   -- for a term/definition separator.
+                   mbc <- peekChar
+                   guard $ maybe True (\c -> c == ' ' || isEndOfLine c) mbc)
   skipWhile (== ' ')
   term <- manyTill (takeWhile1 (\c -> not (isEndOfLine c || c == ':'))
                               <|> takeWhile1 (==':')) marker
@@ -928,7 +933,15 @@ pNormalLine = do
   case contexts of
     ListContext{} : _ -> do
       guard $ t' /= "+"
-      guard $ not $ "::" `T.isInfixOf` t'
+      -- A definition list marker is a run of 2 to 4 colons followed by a
+      -- space or the end of the line.  A mere "::" infix (e.g. in
+      -- std::vector) does not start a definition list.
+      let isDlistMarker (_, post) =
+            let colons = T.takeWhile (== ':') post
+                rest = T.drop (T.length colons) post
+            in T.length colons >= 2 && T.length colons <= 4 &&
+               (T.null rest || T.head rest == ' ')
+      guard $ not $ any isDlistMarker (T.breakOnAll "::" t')
       guard $ case parse pAnyListItemStart fp (T.strip t) of
                 Left _ -> True
                 _ -> False

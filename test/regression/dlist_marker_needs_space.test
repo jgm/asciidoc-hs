@@ -1,0 +1,54 @@
+* use std::vector here
+* second item
+
+A paragraph mentioning std::vector too.
+
+term:: a real definition
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (List
+             (BulletList (Level 1))
+             [ ListItem
+                 Nothing
+                 [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "use std::vector here") ])
+                 ]
+             , ListItem
+                 Nothing
+                 [ Block
+                     mempty Nothing (Paragraph [ Inline mempty (Str "second item") ])
+                 ]
+             ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "A paragraph mentioning std::vector too.") ])
+      , Block
+          mempty
+          Nothing
+          (DefinitionList
+             [ ( [ Inline mempty (Str "term") ]
+               , [ Block
+                     mempty
+                     Nothing
+                     (Paragraph [ Inline mempty (Str "a real definition") ])
+                 ]
+               )
+             ])
+      ]
+  }
