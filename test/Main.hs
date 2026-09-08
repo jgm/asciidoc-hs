@@ -30,6 +30,7 @@ main = do
        , foldBlockTest
        , mapInlineTest
        , mapBlockTest
+       , definitionListTermsTest
        ]
     , testGroup "AST"
        [ metaSemigroupTest
@@ -92,6 +93,37 @@ ensureFinalNewline xs = case T.unsnoc xs of
   Just (_, '\n') -> xs
   _              -> xs <> "\n"
 
+
+definitionListTermsTest :: TestTree
+definitionListTermsTest = testCase "definitionListTerms" $ do
+  let dlistDoc = Document
+        { docMeta = mempty
+        , docBlocks =
+            [ Block mempty Nothing
+                (DefinitionList
+                   [ ( [Inline mempty (Str "term")]
+                     , [ Block mempty Nothing
+                           (Paragraph [Inline mempty (Str "def")]) ] )
+                   ])
+            ]
+        }
+  -- foldInlines and mapInlines must reach the term as well as the definition
+  foldInlines (\case
+                  Inline _ (Str s) -> s
+                  _ -> "") dlistDoc
+    @?= "termdef"
+  d <- mapInlines (\case
+                      Inline _ (Str _) -> pure $ Inline mempty (Str "X")
+                      x -> pure x) dlistDoc
+  foldInlines (\case
+                  Inline _ (Str s) -> s
+                  _ -> "") d
+    @?= "XX"
+  -- foldBlocks must reach the blocks in the definition
+  foldBlocks (\case
+                 Block _ _ (Paragraph _) -> [()]
+                 _ -> []) dlistDoc
+    @?= [()]
 
 metaSemigroupTest :: TestTree
 metaSemigroupTest = testCase "metaSemigroup" $ do

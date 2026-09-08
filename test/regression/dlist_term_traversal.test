@@ -1,0 +1,48 @@
+[#target]
+== Section Title
+
+<<target>> in term:: definition with <<target>>
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          Attr
+          ( [] , fromList [ ( "id" , "target" ) ] )
+          Nothing
+          (Section
+             (Level 1)
+             [ Inline mempty (Str "Section Title") ]
+             [ Block
+                 mempty
+                 Nothing
+                 (DefinitionList
+                    [ ( [ Inline
+                            mempty
+                            (CrossReference
+                               "target" (Just [ Inline mempty (Str "Section Title") ]))
+                        , Inline mempty (Str " in term")
+                        ]
+                      , [ Block
+                            mempty
+                            Nothing
+                            (Paragraph
+                               [ Inline mempty (Str "definition with ")
+                               , Inline
+                                   mempty
+                                   (CrossReference
+                                      "target" (Just [ Inline mempty (Str "Section Title") ]))
+                               ])
+                        ]
+                      )
+                    ])
+             ])
+      ]
+  }

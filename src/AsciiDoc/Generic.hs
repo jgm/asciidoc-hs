@@ -60,6 +60,15 @@ instance (HasInlines a, Traversable t, Foldable t) => HasInlines (t a) where
   foldInlines f = foldMap (foldInlines f)
   mapInlines f = mapM (mapInlines f)
 
+-- Note: this instance is needed because the (t a) instance above would
+-- otherwise match pairs via the Traversable instance for ((,) a), which
+-- traverses only the second component.  Definition list items are pairs
+-- of ([Inline], [Block]), and both components must be traversed.
+instance {-# OVERLAPPING #-} (HasInlines a, HasInlines b)
+         => HasInlines (a, b) where
+  foldInlines f (x, y) = foldInlines f x <> foldInlines f y
+  mapInlines f (x, y) = liftM2 (,) (mapInlines f x) (mapInlines f y)
+
 instance HasInlines Inline where
   foldInlines f i@(Inline _ ty) =
     f i <> foldInlines f ty
@@ -123,6 +132,11 @@ instance {-# OVERLAPPABLE #-} HasBlocks a where
 instance (HasBlocks a, Traversable t, Foldable t) => HasBlocks (t a) where
   foldBlocks f = foldMap (foldBlocks f)
   mapBlocks f = mapM (mapBlocks f)
+
+instance {-# OVERLAPPING #-} (HasBlocks a, HasBlocks b)
+         => HasBlocks (a, b) where
+  foldBlocks f (x, y) = foldBlocks f x <> foldBlocks f y
+  mapBlocks f (x, y) = liftM2 (,) (mapBlocks f x) (mapBlocks f y)
 
 instance HasBlocks Block where
   foldBlocks f i@(Block _ _ ty) =
