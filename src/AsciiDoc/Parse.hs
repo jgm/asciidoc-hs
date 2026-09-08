@@ -198,6 +198,17 @@ match p = P $ do
   parserState <- get
   lift . lift $ A.match (evalStateT (runReaderT (unP p) parseInfo) parserState)
 
+-- Like match, but keeps the parser state changes made by the inner
+-- parser instead of discarding them.
+matchKeepingState :: P a -> P (T.Text, a)
+matchKeepingState p = P $ do
+  parseInfo <- ask
+  parserState <- get
+  (t, (x, newState)) <- lift . lift $
+    A.match (runStateT (runReaderT (unP p) parseInfo) parserState)
+  put newState
+  pure (t, x)
+
 string :: T.Text -> P T.Text
 string = liftP . A.string
 
@@ -972,12 +983,14 @@ pTableBorder = do
   void $ string "==="
   skipWhile (=='=')
   pBlankLine
-  skipMany pBlankLine
   pure syntax
 
 pTable :: Maybe BlockTitle -> Attr -> P Block
 pTable mbtitle (Attr ps kvs) = do
   syntax' <- pTableBorder
+  -- Record whether a blank line separates the opening border from the
+  -- first row; if so, no header row is implied.
+  leadingBlank <- not . null <$> many pBlankLine
   mbcolspecs <- maybe (pure Nothing) (fmap Just . parseColspecs)
                   (M.lookup "cols" kvs)
   let options = maybe [] T.words $ M.lookup "options" kvs
@@ -995,8 +1008,7 @@ pTable mbtitle (Attr ps kvs) = do
                  _ -> Nothing
   let tableOpts = TableOpts { tableSyntax = syntax
                             , tableSeparator = mbsep
-                            , tableHeader = "header" `elem` options ||
-                                "noheader" `notElem` options
+                            , tableHeader = "header" `elem` options
                             , tableFooter = "footer" `elem` options
                             }
   let getRows mbspecs rowspans = (([],[]) <$ pTableBorder) <|>
@@ -1024,13 +1036,24 @@ pTable mbtitle (Attr ps kvs) = do
                                                  [] -> specs
                                                  _ -> colspecs'))
                                      <$> getRows (Just specs) rowspans'
-  (rows, colspecs') <- getRows mbcolspecs (repeat (0 :: Int))
+  (rawRows, (rows, colspecs')) <-
+    matchKeepingState (getRows mbcolspecs (repeat (0 :: Int)))
   let attr' = Attr ps $ M.delete "format" .
                         M.delete "separator" .
                         M.delete "cols" .
                         M.delete "options" $ kvs
+  -- Like Asciidoctor, imply a header row when the first row sits on a
+  -- single line directly after the opening border and is followed by a
+  -- blank line.
+  let isBlankLine = T.all (\c -> c == ' ' || c == '\t')
+  let headerImplied = not leadingBlank && not (null rows) &&
+        case T.lines rawRows of
+          _ : l2 : _ -> isBlankLine l2
+          _ -> False
+  let hasHeader = tableHeader tableOpts ||
+        ("noheader" `notElem` options && headerImplied)
   let (mbHead, rest)
-        | tableHeader tableOpts = (Just (take 1 rows), drop 1 rows)
+        | hasHeader = (Just (take 1 rows), drop 1 rows)
         | otherwise = (Nothing, rows)
   let (mbFoot, bodyRows)
         | tableFooter tableOpts

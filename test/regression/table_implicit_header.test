@@ -1,0 +1,389 @@
+Implied header (first row on one line, then blank line):
+
+|===
+|A |B
+
+|a1 |b1
+|a2 |b2
+|===
+
+No blank line after first row, so no header:
+
+|===
+|a1 |b1
+|a2 |b2
+|===
+
+Explicit header option without header layout:
+
+[options="header"]
+|===
+|a1 |b1
+|a2 |b2
+|===
+
+Header layout suppressed by noheader option:
+
+[options="noheader"]
+|===
+|A |B
+
+|a1 |b1
+|===
+
+Blank line directly after the border, so no header:
+
+|===
+
+|a1 |b1
+|a2 |b2
+|===
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty
+                 (Str "Implied header (first row on one line, then blank line):")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "A") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "B") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (Str "No blank line after first row, so no header:")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (Str "Explicit header option without header layout:")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             (Just
+                [ TableRow
+                    [ TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a1") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    , TableCell
+                        { cellContent =
+                            [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b1") ]) ]
+                        , cellHorizAlign = Nothing
+                        , cellVertAlign = Nothing
+                        , cellColspan = 1
+                        , cellRowspan = 1
+                        }
+                    ]
+                ])
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (Str "Header layout suppressed by noheader option:")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "A") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "B") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline
+                 mempty (Str "Blank line directly after the border, so no header:")
+             ])
+      , Block
+          mempty
+          Nothing
+          (Table
+             [ ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             , ColumnSpec
+                 { colHorizAlign = Nothing
+                 , colVertAlign = Nothing
+                 , colWidth = Nothing
+                 , colStyle = Nothing
+                 }
+             ]
+             Nothing
+             [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b1") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "a2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 , TableCell
+                     { cellContent =
+                         [ Block mempty Nothing (Paragraph [ Inline mempty (Str "b2") ]) ]
+                     , cellHorizAlign = Nothing
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             ]
+             Nothing)
+      ]
+  }

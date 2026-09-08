@@ -33,29 +33,28 @@ Document
                  , colStyle = Nothing
                  }
              ]
-             (Just
-                [ TableRow
-                    [ TableCell
-                        { cellContent =
-                            [ Block
-                                mempty
-                                Nothing
-                                (Paragraph
-                                   [ Inline mempty (Str "Prefix the ")
-                                   , Inline mempty (Str "{vbar}")
-                                   , Inline mempty (Str " with ")
-                                   , Inline mempty (Str "{caret}")
-                                   , Inline mempty (Str " to center content horizontally")
-                                   ])
-                            ]
-                        , cellHorizAlign = Just AlignCenter
-                        , cellVertAlign = Nothing
-                        , cellColspan = 1
-                        , cellRowspan = 1
-                        }
-                    ]
-                ])
+             Nothing
              [ TableRow
+                 [ TableCell
+                     { cellContent =
+                         [ Block
+                             mempty
+                             Nothing
+                             (Paragraph
+                                [ Inline mempty (Str "Prefix the ")
+                                , Inline mempty (Str "{vbar}")
+                                , Inline mempty (Str " with ")
+                                , Inline mempty (Str "{caret}")
+                                , Inline mempty (Str " to center content horizontally")
+                                ])
+                         ]
+                     , cellHorizAlign = Just AlignCenter
+                     , cellVertAlign = Nothing
+                     , cellColspan = 1
+                     , cellRowspan = 1
+                     }
+                 ]
+             , TableRow
                  [ TableCell
                      { cellContent =
                          [ Block
