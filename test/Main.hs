@@ -21,7 +21,9 @@ main = do
   asciidoctorTests <- goldenTests "asciidoctor"
   featureTests <- goldenTests "feature"
   regressionTests <- goldenTests "regression"
-  defaultMain $ testGroup "Tests"
+  -- A global per-test timeout so that parser non-termination bugs make
+  -- tests fail instead of hanging the suite.
+  defaultMain $ localOption (mkTimeout 10000000) $ testGroup "Tests"
     [ testGroup "Asciidoctor" asciidoctorTests
     , testGroup "Feature" featureTests
     , testGroup "Regression" regressionTests

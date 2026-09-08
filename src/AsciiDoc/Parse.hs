@@ -712,7 +712,11 @@ pDelimitedLiteralBlock :: Char -> Int -> P [T.Text]
 pDelimitedLiteralBlock c minimumNumber = do
   len <- length <$> some (vchar c) <* pBlankLine
   guard $ len >= minimumNumber
-  let endFence = count len (vchar c) *> (pBlankLine <|> endOfInput)
+  -- The bare endOfInput alternative makes an unterminated block extend
+  -- to the end of input; without it, manyTill would loop forever at end
+  -- of input because pLine succeeds there without consuming anything.
+  let endFence = (count len (vchar c) *> (pBlankLine <|> endOfInput))
+                 <|> endOfInput
   manyTill pLine endFence
 
 pDelimitedBlock :: Char -> Int -> P [Block]
@@ -760,7 +764,10 @@ pFenced mbtitle attr = do
   let mblang = case T.strip lang' of
                  "" -> Nothing
                  l -> Just (Language l)
-  lns <- toSourceLines <$> manyTill pLine (string ticks)
+  -- An unterminated block extends to the end of input; without the
+  -- endOfInput alternative, manyTill would loop forever at end of input
+  -- because pLine succeeds there without consuming anything.
+  lns <- toSourceLines <$> manyTill pLine (void (string ticks) <|> endOfInput)
   pure $ Block attr mbtitle $ Listing mblang lns
 
 pListing :: Maybe BlockTitle -> Attr -> P Block
