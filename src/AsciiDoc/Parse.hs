@@ -1484,7 +1484,7 @@ pNumericCharacterReference =
 
 pCharacterEntityReference :: P Inline
 pCharacterEntityReference = do
-  xs <- manyTill (satisfy isAlphaNum) (char ';' <|> space)
+  xs <- manyTill (satisfy isAlphaNum) (char ';')
   case lookupNamedEntity xs of
     Just s -> pure $ Inline mempty (Str (T.pack s))
     Nothing -> mzero

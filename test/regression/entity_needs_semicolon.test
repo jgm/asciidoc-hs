@@ -1,0 +1,22 @@
+AT&amp;T but AT&amp T keeps its space.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "AT")
+             , Inline mempty (Str "&")
+             , Inline mempty (Str "T but AT&amp T keeps its space.")
+             ])
+      ]
+  }
