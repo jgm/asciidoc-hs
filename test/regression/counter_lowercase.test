@@ -1,0 +1,25 @@
+one {counter:foo:a} two {counter:foo} upper {counter:bar:C}
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "one ")
+             , Inline mempty (Counter "foo" LowerAlphaCounter 1)
+             , Inline mempty (Str " two ")
+             , Inline mempty (Counter "foo" LowerAlphaCounter 2)
+             , Inline mempty (Str " upper ")
+             , Inline mempty (Counter "bar" UpperAlphaCounter 3)
+             ])
+      ]
+  }

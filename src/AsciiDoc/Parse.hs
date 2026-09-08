@@ -1728,7 +1728,7 @@ pCounterValue = pUpperValue <|> pLowerValue <|> pDecimalValue
      pure (UpperAlphaCounter, 1 + (ord c - ord 'A'))
    pLowerValue = do
      c <- satisfy (\c -> isAscii c && isLower c)
-     pure (UpperAlphaCounter, 1 + (ord c - ord 'a'))
+     pure (LowerAlphaCounter, 1 + (ord c - ord 'a'))
    pDecimalValue = do
      n <- decimal
      pure (DecimalCounter, n)
