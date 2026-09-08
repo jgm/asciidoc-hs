@@ -1,0 +1,5 @@
+Before the self-include.
+
+include::include_cycle_helper.adoc[]
+
+After the self-include.

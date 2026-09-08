@@ -1,0 +1,33 @@
+include::include_cycle_helper.adoc[]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Include
+             "test/regression/include_cycle_helper.adoc"
+             (Just
+                [ Block
+                    mempty
+                    Nothing
+                    (Paragraph [ Inline mempty (Str "Before the self-include.") ])
+                , Block
+                    mempty
+                    Nothing
+                    (Include "test/regression/include_cycle_helper.adoc" Nothing)
+                , Block
+                    mempty
+                    Nothing
+                    (Paragraph [ Inline mempty (Str "After the self-include.") ])
+                ]))
+      ]
+  }

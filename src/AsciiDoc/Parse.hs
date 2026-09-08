@@ -80,20 +80,25 @@ parseDocument getFileContents raiseError path t =
        Just x -> return $ Inline attr (Str x)
   goAttref _ il = return il
 
-  handleIncludes = mapBlocks handleIncludeBlock
+  handleIncludes = mapBlocks (handleIncludeBlock [path])
 
-  handleIncludeBlock (Block attr mbtitle (Include fp Nothing)) =
-    (do contents <- getFileContents fp
-        Block attr mbtitle . Include fp . Just . docBlocks <$>
-          handleResult (parse pDocument fp contents))
-      >>= mapBlocks handleIncludeBlock
-  handleIncludeBlock (Block attr mbtitle
-                         (IncludeListing mblang fp Nothing)) =
+  -- The first argument is the chain of files being included; a file
+  -- that (transitively) includes itself is left unexpanded instead of
+  -- recursing forever.
+  handleIncludeBlock seen b@(Block attr mbtitle (Include fp Nothing))
+    | fp `elem` seen = pure b
+    | otherwise =
+        (do contents <- getFileContents fp
+            Block attr mbtitle . Include fp . Just . docBlocks <$>
+              handleResult (parse pDocument fp contents))
+          >>= mapBlocks (handleIncludeBlock (fp : seen))
+  handleIncludeBlock seen (Block attr mbtitle
+                             (IncludeListing mblang fp Nothing)) =
     (do contents <- getFileContents fp
         pure $ Block attr mbtitle $ IncludeListing mblang fp
              $ Just (map (`SourceLine` []) (T.lines contents)))
-      >>= mapBlocks handleIncludeBlock
-  handleIncludeBlock x = pure x
+      >>= mapBlocks (handleIncludeBlock (fp : seen))
+  handleIncludeBlock _ x = pure x
 
 -- | Make a relative path relative to a parent's directory.
 -- Leaves absolute paths alone.
