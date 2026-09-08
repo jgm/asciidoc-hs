@@ -24,6 +24,8 @@ jobs:
             cabal: 'latest'
           - ghc: '9.10'
             cabal: 'latest'
+          - ghc: '9.12'
+            cabal: 'latest'
 
     steps:
     - uses: actions/checkout@v6
@@ -55,6 +57,6 @@ jobs:
 
     - name: Build and test
       run: |
-          cabal build --enable-tests -fexecutable all
+          cabal build --enable-tests --enable-benchmarks -fexecutable all
           cabal test all
 
