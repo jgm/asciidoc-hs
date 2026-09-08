@@ -1107,7 +1107,7 @@ pCSVCell delim = do
           (T.pack <$>
             manyTill (satisfy (/='"') <|> ('"' <$ string "\"\"")) (vchar '"'))
     _ -> T.strip . T.replace "\"\"" "\"" <$>
-           takeWhile1 (\c -> c /= delim && not (isEndOfLine c))
+           takeWhile (\c -> c /= delim && not (isEndOfLine c))
 
 -- no "; escape delim with backslash
 pDSVTableRow:: Char -> Maybe [ColumnSpec] -> P [TableCell]
