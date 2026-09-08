@@ -19,7 +19,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import Data.Text (Text)
-import Data.List (foldl', intersperse, isPrefixOf)
+import Data.List (foldl', intersperse, isPrefixOf, sortOn)
 import qualified Data.Attoparsec.Text as A
 import System.FilePath
 import Control.Applicative
@@ -1365,12 +1365,62 @@ pInlines' cs = do
                        _ -> il'
             addStr . (il:) <$> pInlines' [])
     <|> (do c <- anyChar
-            pInlines' (c:cs))
+            if isLetter c
+               then pLetterRun c cs
+               else pInlines' (c:cs))
     <|> (addStr [] <$ endOfInput)
  where
-  addStr = case cs of
-              [] -> id
-              _  -> (Inline mempty (Str (T.pack (replaceChars $ reverse cs))):)
+  addStr = prependStr cs
+
+prependStr :: [Char] -> [Inline] -> [Inline]
+prependStr [] = id
+prependStr cs = (Inline mempty (Str (T.pack (replaceChars $ reverse cs))):)
+
+-- When no inline element can be parsed at the first letter of a run of
+-- letters, the only inline elements that can still start inside the
+-- run are macros and autolinks, whose (letter-only prefix of the) name
+-- must be a suffix of the run: the name is followed by ':' (possibly
+-- after a non-letter rest of the name, like the '2' of indexterm2),
+-- which ends the run.  An email autolink cannot match inside the run
+-- if it did not match at its start, since every letter is a valid
+-- local-part character and the greedy local-part scan ends at the same
+-- place either way.  So the whole run can be consumed at once, trying
+-- the few possible nested macro/autolink starts, instead of retrying
+-- every inline parser at each letter.  This makes parsing a long word
+-- linear instead of quadratic.
+pLetterRun :: Char -> [Char] -> P [Inline]
+pLetterRun c cs = do
+  rest <- takeWhile isLetter
+  let w = T.cons c rest
+  let plain = pInlines' (reverse (T.unpack w) <> cs)
+  foldr (tryNested w) plain nestedInlineStarts
+ where
+  tryNested w (letters, nameRest, p) alt
+    | T.length letters < T.length w
+    , letters `T.isSuffixOf` w =
+        (do void $ string (nameRest <> ":")
+            il <- p
+            let pre = T.dropEnd (T.length letters) w
+            let cs' = reverse (T.unpack pre) <> cs
+            prependStr cs' . (il:) <$> pInlines' [])
+        <|> alt
+    | otherwise = alt
+
+-- Possible starts of macros and autolinks, as (letter-only prefix of
+-- the name, rest of the name, parser for what follows the name and
+-- ':').  Sorted by decreasing prefix length, i.e. by increasing
+-- starting position within a run of letters, so that the leftmost
+-- match wins; macros come before autolink schemes of the same name.
+nestedInlineStarts :: [(Text, Text, P Inline)]
+nestedInlineStarts =
+  sortOn (\(letters, _, _) -> negate (T.length letters)) $
+    [ (letters, T.drop (T.length letters) name, pInlineMacroTarget name)
+    | name <- M.keys inlineMacros
+    , let letters = T.takeWhile isLetter name
+    ] ++
+    [ (scheme, "", pAutolinkTarget (scheme <> ":"))
+    | scheme <- autolinkSchemes
+    ]
 
 replaceChars :: [Char] -> [Char]
 replaceChars [] = []
@@ -1554,6 +1604,11 @@ pApostrophe _ = mzero
 pInlineMacro :: P Inline
 pInlineMacro = do
   name <- choice (map (\n -> string n <* vchar ':') (M.keys inlineMacros))
+  pInlineMacroTarget name
+
+-- Parse the part of an inline macro after the name and ':'.
+pInlineMacroTarget :: Text -> P Inline
+pInlineMacroTarget name = do
   let targetChars = mconcat <$> some
        ( (string "pass:" *> vchar '[' *> takeWhile1 (/=']') <* vchar ']')
          <|>
@@ -1694,10 +1749,18 @@ pEmailAutolink = do
                   then pure [Inline mempty (Str email)]
                   else parseInlines description
 
+autolinkSchemes :: [Text]
+autolinkSchemes = ["http", "https", "irc", "ftp", "mailto"]
+
 pAutolink :: P Inline
 pAutolink = do
-  scheme <- choice (map string
-               ["http:", "https:", "irc:", "ftp:", "mailto:"])
+  scheme <- choice (map (\s -> string (s <> ":")) autolinkSchemes)
+  pAutolinkTarget scheme
+
+-- Parse the part of an autolink after the scheme (which includes the
+-- trailing ':').
+pAutolinkTarget :: Text -> P Inline
+pAutolinkTarget scheme = do
   let isSpecialPunct ',' = True
       isSpecialPunct '.' = True
       isSpecialPunct '?' = True
