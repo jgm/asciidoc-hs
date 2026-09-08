@@ -1,0 +1,33 @@
+:x: first
+
+{x}
+
+:x: second
+
+{x} and {y}
+
+:y: late
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes =
+            fromList
+              [ ( "sectids" , "" ) , ( "x" , "second" ) , ( "y" , "late" ) ]
+        }
+  , docBlocks =
+      [ Block mempty Nothing (Paragraph [ Inline mempty (Str "first") ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph
+             [ Inline mempty (Str "second")
+             , Inline mempty (Str " and ")
+             , Inline mempty (Str "late")
+             ])
+      ]
+  }

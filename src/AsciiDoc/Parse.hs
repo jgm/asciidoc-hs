@@ -1768,7 +1768,15 @@ pAttributeReference = do
   vchar '}'
   case M.lookup name replacements of
     Just r -> pure $ Inline mempty (Str r)
-    Nothing -> pure $ Inline mempty $ AttributeReference (AttributeName name)
+    Nothing -> do
+      -- Resolve document attributes at the point of use, so that a
+      -- reference sees the value in effect where it occurs.  References
+      -- to attributes defined later are left unresolved here and get
+      -- the end-of-document value in a post-processing pass.
+      attrs <- gets docAttrs
+      case M.lookup name attrs of
+        Just v -> pure $ Inline mempty (Str v)
+        Nothing -> pure $ Inline mempty $ AttributeReference (AttributeName name)
 
 replacements :: M.Map Text Text
 replacements = M.fromList
