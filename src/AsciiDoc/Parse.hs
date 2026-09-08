@@ -1367,44 +1367,57 @@ pInlines' cs = do
     <|> (do c <- anyChar
             if isLetter c
                then pLetterRun c cs
-               else pInlines' (c:cs))
+               else do
+                 inert <- takeWhile isInertChar
+                 pInlines' (reverse (T.unpack inert) <> (c:cs)))
     <|> (addStr [] <$ endOfInput)
  where
   addStr = prependStr cs
+
+-- Characters that cannot begin any inline element or line comment, so
+-- a run of them can be consumed at once without retrying the inline
+-- parsers at each position.
+isInertChar :: Char -> Bool
+isInertChar c =
+  not (isLetter c) && notElem c ("*_`#~^+\"'({\\<&[/" :: [Char])
 
 prependStr :: [Char] -> [Inline] -> [Inline]
 prependStr [] = id
 prependStr cs = (Inline mempty (Str (T.pack (replaceChars $ reverse cs))):)
 
--- When no inline element can be parsed at the first letter of a run of
--- letters, the only inline elements that can still start inside the
--- run are macros and autolinks, whose (letter-only prefix of the) name
--- must be a suffix of the run: the name is followed by ':' (possibly
--- after a non-letter rest of the name, like the '2' of indexterm2),
--- which ends the run.  An email autolink cannot match inside the run
--- if it did not match at its start, since every letter is a valid
--- local-part character and the greedy local-part scan ends at the same
--- place either way.  So the whole run can be consumed at once, trying
--- the few possible nested macro/autolink starts, instead of retrying
--- every inline parser at each letter.  This makes parsing a long word
--- linear instead of quadratic.
+-- The only inline elements that can start at a letter are macros,
+-- autolinks and email autolinks, so a whole run of letters can be
+-- consumed at once and just those candidates tried.  A macro or
+-- autolink name is followed by ':' (possibly after a non-letter rest
+-- of the name, like the '2' of indexterm2), which ends the run, so
+-- its letter-only prefix must be a suffix of the run; only those few
+-- suffix positions need to be tried, leftmost first.  An email
+-- autolink can only usefully start at the beginning of the run, since
+-- every letter is a valid local-part character and the greedy
+-- local-part scan ends at the same place either way.  This makes
+-- parsing a run of letters linear instead of quadratic in its length.
 pLetterRun :: Char -> [Char] -> P [Inline]
 pLetterRun c cs = do
   rest <- takeWhile isLetter
   let w = T.cons c rest
   let plain = pInlines' (reverse (T.unpack w) <> cs)
-  foldr (tryNested w) plain nestedInlineStarts
+  let candidates = [ x | x@(letters, _, _) <- nestedInlineStarts
+                       , letters `T.isSuffixOf` w ]
+  let (atStart, nested) =
+        span (\(letters, _, _) -> T.length letters == T.length w) candidates
+  let tryEmail = do
+        more <- takeWhile isEmailLocalChar
+        il <- pEmailAutolinkRest (w <> more)
+        prependStr cs . (il:) <$> pInlines' []
+  foldr (tryNested w) (tryEmail <|> foldr (tryNested w) plain nested) atStart
  where
-  tryNested w (letters, nameRest, p) alt
-    | T.length letters < T.length w
-    , letters `T.isSuffixOf` w =
-        (do void $ string (nameRest <> ":")
-            il <- p
-            let pre = T.dropEnd (T.length letters) w
-            let cs' = reverse (T.unpack pre) <> cs
-            prependStr cs' . (il:) <$> pInlines' [])
-        <|> alt
-    | otherwise = alt
+  tryNested w (letters, nameRest, p) alt =
+    (do void $ string (nameRest <> ":")
+        il <- p
+        let pre = T.dropEnd (T.length letters) w
+        let cs' = reverse (T.unpack pre) <> cs
+        prependStr cs' . (il:) <$> pInlines' [])
+    <|> alt
 
 -- Possible starts of macros and autolinks, as (letter-only prefix of
 -- the name, rest of the name, parser for what follows the name and
@@ -1488,8 +1501,8 @@ pInline prevChars = do
                '<' -> pBracedAutolink <|> pCrossReference
                '&' -> pCharacterReference
                '[' -> pBibAnchor <|> pInlineAnchor
-               _ | isLetter c -> pInlineMacro <|> pAutolink <|> pEmailAutolink
-                 | otherwise -> mzero)
+               -- letters are handled by pLetterRun
+               _ -> mzero)
 
 pIndexEntry :: Attr -> P Inline
 pIndexEntry attr = do
@@ -1600,11 +1613,6 @@ pQuoted c attr constructor = do
 pApostrophe :: Char -> P Inline
 pApostrophe '`' = Inline mempty (Str "’") <$ string "`'"
 pApostrophe _ = mzero
-
-pInlineMacro :: P Inline
-pInlineMacro = do
-  name <- choice (map (\n -> string n <* vchar ':') (M.keys inlineMacros))
-  pInlineMacroTarget name
 
 -- Parse the part of an inline macro after the name and ':'.
 pInlineMacroTarget :: Text -> P Inline
@@ -1734,9 +1742,12 @@ extractDescription (Attr ps kvs) =
   in (description, Attr (drop 1 ps) kvs)
 
 
-pEmailAutolink :: P Inline
-pEmailAutolink = do
-  a <- takeWhile1 (\c -> isAlphaNum c || c == '_' || c == '.' || c == '+')
+isEmailLocalChar :: Char -> Bool
+isEmailLocalChar c = isAlphaNum c || c == '_' || c == '.' || c == '+'
+
+-- Parse the part of an email autolink after the local part.
+pEmailAutolinkRest :: Text -> P Inline
+pEmailAutolinkRest a = do
   vchar '@'
   b <- takeWhile1 isLetter
   vchar '.'
