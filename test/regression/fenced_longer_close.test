@@ -1,0 +1,24 @@
+```
+code line
+````
+
+A paragraph after the block.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty Nothing (Listing Nothing [ SourceLine "code line" [] ])
+      , Block
+          mempty
+          Nothing
+          (Paragraph [ Inline mempty (Str "A paragraph after the block.") ])
+      ]
+  }

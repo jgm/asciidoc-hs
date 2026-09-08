@@ -766,8 +766,11 @@ pFenced mbtitle attr = do
                  l -> Just (Language l)
   -- An unterminated block extends to the end of input; without the
   -- endOfInput alternative, manyTill would loop forever at end of input
-  -- because pLine succeeds there without consuming anything.
-  lns <- toSourceLines <$> manyTill pLine (void (string ticks) <|> endOfInput)
+  -- because pLine succeeds there without consuming anything.  A closing
+  -- fence may be longer than the opening one; consume the extra
+  -- backticks so they don't leak into the following block.
+  lns <- toSourceLines <$>
+    manyTill pLine ((string ticks *> skipWhile (== '`')) <|> endOfInput)
   pure $ Block attr mbtitle $ Listing mblang lns
 
 pListing :: Maybe BlockTitle -> Attr -> P Block
