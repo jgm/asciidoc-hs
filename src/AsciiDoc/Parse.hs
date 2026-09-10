@@ -21,6 +21,7 @@ import qualified Data.Text.Read as TR
 import Data.Text (Text)
 import Data.List (foldl', intersperse, isPrefixOf, sortOn)
 import qualified Data.Attoparsec.Text as A
+import qualified Data.Attoparsec.Combinator as A (lookAhead)
 import System.FilePath
 import Control.Applicative
 import Control.Monad
@@ -719,6 +720,11 @@ pDefinitionList =
 pDefinitionListItem :: P ([Inline],[Block])
 pDefinitionListItem = do
   contexts <- asks blockContexts
+  -- The term/definition separator must occur before the end of the
+  -- line, so ordinary paragraph text can be rejected with a single
+  -- substring check instead of the chunked term scan below.
+  restOfLine <- liftP (A.lookAhead (A.takeWhile (not . A.isEndOfLine)))
+  guard $ "::" `T.isInfixOf` restOfLine
   let marker = (do t <- takeWhile1 (== ':')
                    case contexts of
                        ListContext ':' n : _ -> guard (T.length t == n + 2)
