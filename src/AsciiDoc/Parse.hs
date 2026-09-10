@@ -42,10 +42,31 @@ parseDocument :: Monad m
                   -- ^ Path of file containing the text
               -> Text -- ^ Text to convert
               -> m Document
-parseDocument getFileContents raiseError path t =
-   handleResult (parse pDocument path t) >>= handleIncludes
-     >>= resolveAttributeReferences . addIdentifiers
-     >>= resolveCrossReferences
+parseDocument getFileContents raiseError path t = do
+  -- The parser records which constructs occurred, so that the
+  -- post-processing passes (each a full traversal of the AST) can be
+  -- skipped when they would do nothing.  When includes are expanded,
+  -- their contents are not reflected in the flags, so all passes run.
+  (doc0, flags) <- case parse ((,) <$> pDocument <*> gets parseFlags) path t of
+                     Left err -> do
+                       -- raiseError may return a fallback document whose
+                       -- contents we know nothing about, so run all passes.
+                       d <- raiseError path (errorPosition err)
+                                            (errorMessage err)
+                       pure (d, ParseFlags True True True True)
+                     Right r -> pure r
+  doc1 <- if sawInclude flags
+             then handleIncludes doc0
+             else pure doc0
+  let doc2 = if sawInclude flags || sawSection flags
+                then addIdentifiers doc1
+                else doc1
+  doc3 <- if sawInclude flags || sawAttributeReference flags
+             then resolveAttributeReferences doc2
+             else pure doc2
+  if sawInclude flags || sawCrossReference flags
+     then resolveCrossReferences doc3
+     else pure doc3
  where
   handleResult (Left err) =
     raiseError path (errorPosition err) (errorMessage err)
@@ -117,8 +138,24 @@ newtype P a = P { unP :: ReaderT ParserConfig (StateT ParserState A.Parser) a }
 data ParserState = ParserState
                      { counterMap :: M.Map Text (CounterType, Int)
                      , docAttrs :: M.Map Text Text
+                     , parseFlags :: !ParseFlags
                      }
         deriving (Show)
+
+-- | Which constructs occurred during the parse; used to skip
+-- post-processing passes that would have no effect.
+data ParseFlags = ParseFlags
+  { sawInclude :: !Bool
+  , sawSection :: !Bool
+  , sawAttributeReference :: !Bool
+  , sawCrossReference :: !Bool
+  } deriving (Show)
+
+noParseFlags :: ParseFlags
+noParseFlags = ParseFlags False False False False
+
+setFlag :: (ParseFlags -> ParseFlags) -> P ()
+setFlag f = modify $ \s -> s{ parseFlags = f (parseFlags s) }
 
 defaultDocAttrs :: M.Map Text Text
 defaultDocAttrs = M.insert "sectids" "" mempty
@@ -140,6 +177,7 @@ parse p fp = parse' (ParserConfig{ filePath = fp
                                  })
                     (ParserState { counterMap = mempty
                                  , docAttrs = defaultDocAttrs
+                                 , parseFlags = noParseFlags
                                  })
                     p
 
@@ -560,6 +598,7 @@ blockMacros = M.fromList
         attr' <- pAttributes
         fp <- asks filePath
         let path = resolvePath fp (T.unpack target)
+        setFlag $ \f -> f{ sawInclude = True }
         pure $ Block (attr' <> attr) mbtitle $ Include path Nothing)
   ]
 
@@ -578,6 +617,7 @@ pSection = do
       -- ==== bar
       -- ==== baz
       -- bar is a level-3 section and will contain baz!
+      setFlag $ \f -> f{ sawSection = True }
       pure $ Section (Level (sectionLevel + 1)) title contents
     _ -> mzero
 
@@ -798,12 +838,14 @@ pListing mbtitle attr = (do
           _ -> (Nothing, attr)
   lns <- toSourceLines <$> pDelimitedLiteralBlock '-' 4
   fp <- asks filePath
-  pure $ Block attr' mbtitle $
-    case lns of
+  bt <- case lns of
       [SourceLine x []] | "include::" `T.isPrefixOf` x
           , Right ("include", target) <- parse pBlockMacro' fp x
-          -> IncludeListing mbLang (resolvePath fp (T.unpack target)) Nothing
-      _ -> Listing mbLang lns)
+          -> do setFlag $ \f -> f{ sawInclude = True }
+                pure $ IncludeListing mbLang
+                         (resolvePath fp (T.unpack target)) Nothing
+      _ -> pure $ Listing mbLang lns
+  pure $ Block attr' mbtitle bt)
  <|>
   (case attr of
     Attr ("listing":ps) kvs -> do
@@ -1213,13 +1255,19 @@ pTableCellPSV mbsep allowNewlines colspecs = do
                      notFollowedBy (void (pCellSep sep))
                    when (couldStartBorder c) $
                      notFollowedBy (void pTableBorder)
-                   T.singleton <$>
-                     ((vchar '\\' *> char sep)
-                       <|> satisfy (not . isEndOfLine)
-                       <|> if allowNewlines
-                              then satisfy isEndOfLine
-                              else satisfy isEndOfLine
-                                     <* notFollowedBy (pCellSep sep))))
+                   -- pCellSep skips leading whitespace itself, so if it
+                   -- failed at the first space of a run it fails at
+                   -- every position within it; the whole run can be
+                   -- consumed after a single lookahead.
+                   if c == ' ' || c == '\t'
+                      then takeWhile1 (\d -> d == ' ' || d == '\t')
+                      else T.singleton <$>
+                        ((vchar '\\' *> char sep)
+                          <|> satisfy (not . isEndOfLine)
+                          <|> if allowNewlines
+                                 then satisfy isEndOfLine
+                                 else satisfy isEndOfLine
+                                        <* notFollowedBy (pCellSep sep))))
   let cell' = TableCell
                { cellContent = []
                , cellHorizAlign = cHorizAlign cellData
@@ -1285,6 +1333,12 @@ toCellStyle _   = Nothing
 pCellSep :: Char -> P CellData
 pCellSep sep = do
   skipWhile (\c -> c == ' ' || c == '\t')
+  -- Fail fast unless the next character can actually begin a cell
+  -- separator, so that speculative lookaheads stay cheap.
+  mbc <- peekChar
+  case mbc of
+    Just c | c == sep || isDigit c || A.inClass ".<^>adehlms" c -> pure ()
+    _ -> mzero
   mult <- option 1 pMultiplier
   (colspan, rowspan) <- option (Nothing, Nothing) $ do
     a <- optional decimal
@@ -1376,36 +1430,56 @@ pQuotedAttr = do
    vchar '"'
    pure $ T.pack result
 
-pInlines' :: [Char] -> P [Inline]
+-- The [Text] argument accumulates the plain text seen so far, in
+-- reverse chunk order; prependStr turns it into a Str inline.
+pInlines' :: [Text] -> P [Inline]
 pInlines' cs = do
-  (pLineComment *> pInlines' cs)
-    <|> (do il' <- pInline cs
-            let il = case il' of
-                       Inline (Attr ps kvs) (Span ils)
-                         | Nothing <- M.lookup "role" kvs
-                         -> Inline (Attr ps kvs) (Highlight ils)
-                       _ -> il'
-            addStr . (il:) <$> pInlines' [])
-    <|> (do c <- anyChar
-            if isLetter c
-               then pLetterRun c cs
-               else do
-                 inert <- takeWhile isInertChar
-                 pInlines' (reverse (T.unpack inert) <> (c:cs)))
-    <|> (addStr [] <$ endOfInput)
+  -- Dispatch on the next character: only try the parsers that can
+  -- possibly succeed there, instead of running every alternative (and
+  -- paying for its failure) at each position.
+  mbc <- peekChar
+  case mbc of
+    Nothing -> pure $ addStr []
+    Just c
+      | isLetter c -> pLetterRun cs
+      | c == '/' -> (pLineComment *> pInlines' cs) <|> pPlainChar c
+      | isInlineStartChar c ->
+          (do il' <- pInline cs
+              let il = case il' of
+                         Inline (Attr ps kvs) (Span ils)
+                           | Nothing <- M.lookup "role" kvs
+                           -> Inline (Attr ps kvs) (Highlight ils)
+                         _ -> il'
+              addStr . (il:) <$> pInlines' [])
+          <|> pPlainChar c
+      | otherwise -> do
+          inert <- takeWhile1 isInertChar
+          pInlines' (inert : cs)
  where
   addStr = prependStr cs
+  -- Consume a character that failed to start an inline element (or
+  -- line comment), along with any following inert run.
+  pPlainChar c = do
+    _ <- anyChar
+    inert <- takeWhile isInertChar
+    pInlines' (T.cons c inert : cs)
+
+-- Characters that can begin an inline element (see pInline).
+isInlineStartChar :: Char -> Bool
+isInlineStartChar c = elem c ("*_`#~^+\"'({\\<&[" :: [Char])
 
 -- Characters that cannot begin any inline element or line comment, so
 -- a run of them can be consumed at once without retrying the inline
 -- parsers at each position.
 isInertChar :: Char -> Bool
 isInertChar c =
-  not (isLetter c) && notElem c ("*_`#~^+\"'({\\<&[/" :: [Char])
+  not (isLetter c) && not (isInlineStartChar c) && c /= '/'
 
-prependStr :: [Char] -> [Inline] -> [Inline]
+prependStr :: [Text] -> [Inline] -> [Inline]
 prependStr [] = id
-prependStr cs = (Inline mempty (Str (T.pack (replaceChars $ reverse cs))):)
+prependStr cs =
+  (Inline mempty
+    (Str (T.pack (replaceChars (T.unpack (T.concat (reverse cs)))))):)
 
 -- The only inline elements that can start at a letter are macros,
 -- autolinks and email autolinks, so a whole run of letters can be
@@ -1418,12 +1492,12 @@ prependStr cs = (Inline mempty (Str (T.pack (replaceChars $ reverse cs))):)
 -- every letter is a valid local-part character and the greedy
 -- local-part scan ends at the same place either way.  This makes
 -- parsing a run of letters linear instead of quadratic in its length.
-pLetterRun :: Char -> [Char] -> P [Inline]
-pLetterRun c cs = do
-  rest <- takeWhile isLetter
-  let w = T.cons c rest
-  let plain = pInlines' (reverse (T.unpack w) <> cs)
-  let candidates = [ x | x@(letters, _, _) <- nestedInlineStarts
+pLetterRun :: [Text] -> P [Inline]
+pLetterRun cs = do
+  w <- takeWhile1 isLetter
+  let plain = pInlines' (w : cs)
+  let candidates = [ x | x@(letters, _, _) <-
+                           M.findWithDefault [] (T.last w) nestedInlineStartsByLastLetter
                        , letters `T.isSuffixOf` w ]
   let (atStart, nested) =
         span (\(letters, _, _) -> T.length letters == T.length w) candidates
@@ -1431,13 +1505,21 @@ pLetterRun c cs = do
         more <- takeWhile isEmailLocalChar
         il <- pEmailAutolinkRest (w <> more)
         prependStr cs . (il:) <$> pInlines' []
-  foldr (tryNested w) (tryEmail <|> foldr (tryNested w) plain nested) atStart
+  -- An email autolink continues with more local-part characters or the
+  -- '@'; anything else after the letter run rules it out, so the
+  -- attempt (and its backtracking) can be skipped.
+  mbNext <- peekChar
+  let emailPossible = case mbNext of
+        Just d -> d == '@' || isEmailLocalChar d
+        Nothing -> False
+  let withEmail p = if emailPossible then tryEmail <|> p else p
+  foldr (tryNested w) (withEmail (foldr (tryNested w) plain nested)) atStart
  where
   tryNested w (letters, nameRest, p) alt =
     (do void $ string (nameRest <> ":")
         il <- p
         let pre = T.dropEnd (T.length letters) w
-        let cs' = reverse (T.unpack pre) <> cs
+        let cs' = if T.null pre then cs else pre : cs
         prependStr cs' . (il:) <$> pInlines' [])
     <|> alt
 
@@ -1456,6 +1538,14 @@ nestedInlineStarts =
     [ (scheme, "", pAutolinkTarget (scheme <> ":"))
     | scheme <- autolinkSchemes
     ]
+
+-- The same starts indexed by the last letter of the prefix, so that a
+-- letter run only has to check the few candidates that could be its
+-- suffix, preserving the order of nestedInlineStarts within a bucket.
+nestedInlineStartsByLastLetter :: M.Map Char [(Text, Text, P Inline)]
+nestedInlineStartsByLastLetter =
+  M.fromListWith (flip (++))
+    [ (T.last letters, [x]) | x@(letters, _, _) <- nestedInlineStarts ]
 
 replaceChars :: [Char] -> [Char]
 replaceChars [] = []
@@ -1494,10 +1584,12 @@ pShorthandAttribute = do
            _ -> mzero
   pure (key, val)
 
-pInline :: [Char] -> P Inline
+pInline :: [Text] -> P Inline
 pInline prevChars = do
+  -- The chunks in prevChars are non-empty by construction.
   let maybeUnconstrained = case prevChars of
-                              (d:_) -> isSpace d || isPunctuation d || d == '+'
+                              (t:_) -> let d = T.last t
+                                       in isSpace d || isPunctuation d || d == '+'
                               [] -> True
   let inMatched = pInMatched maybeUnconstrained
   (do attr <- pFormattedTextAttributes <|> pure mempty
@@ -1551,7 +1643,9 @@ pCrossReference = do
   let ts = T.split (==',') t
   case ts of
     [] -> mzero
-    [x] -> pure $ Inline mempty $ CrossReference x Nothing
+    [x] -> do
+      setFlag $ \f -> f{ sawCrossReference = True }
+      pure $ Inline mempty $ CrossReference x Nothing
     (x:xs) -> Inline mempty . CrossReference x . Just
                        <$> parseInlines (T.intercalate "," xs)
 
@@ -1572,17 +1666,31 @@ pInMatched maybeUnconstrained delim attr toInlineType = do
   isDoubled <- option False (True <$ vchar delim)
   followedBySpace <- maybe True isSpace <$> peekChar
   guard $ isDoubled || (maybeUnconstrained && not followedBySpace)
-  cs <- manyTill ( (vchar '\\' *> char delim) <|> anyChar )
-                   (if isDoubled
-                       then vchar delim *> vchar delim
-                       else vchar delim)
-  guard $ not $ null cs
+  t <- pMatchedContent isDoubled delim
+  guard $ not $ T.null t
   when (not isDoubled && maybeUnconstrained) $ do
     mbc <- peekChar
     case mbc of
       Nothing -> pure ()
       Just c -> guard $ isSpace c || isPunctuation c || c == '+'
-  Inline attr <$> toInlineType (T.pack cs)
+  Inline attr <$> toInlineType t
+
+-- Scan the content of a delimited span up to and including the closing
+-- delimiter (doubled or single), consuming runs of plain characters in
+-- chunks rather than character by character.  A backslash escapes the
+-- delimiter; in doubled mode a lone delimiter is content.
+pMatchedContent :: Bool -> Char -> P Text
+pMatchedContent isDoubled delim = mconcat <$> go
+ where
+  closing = if isDoubled
+               then vchar delim *> vchar delim
+               else vchar delim
+  go = ([] <$ closing) <|> ((:) <$> piece <*> go)
+  piece = takeWhile1 (\c -> c /= delim && c /= '\\')
+      <|> (vchar '\\' *> ((T.singleton <$> char delim) <|> pure "\\"))
+      <|> (T.singleton <$> char delim)
+          -- only reachable in doubled mode, when the delimiter is not
+          -- part of a closing pair
 
 pInlineAnchor :: P Inline
 pInlineAnchor = do
@@ -1719,7 +1827,9 @@ inlineMacros = M.fromList
       Inline (Attr mempty kvs) . Footnote fnid <$> parseInlines contents)
   , ("xref", \target -> do
         ils <- pBracketedText >>= parseInlines
-        let mbtext = if null ils then Nothing else Just ils
+        mbtext <- if null ils
+                     then Nothing <$ setFlag (\f -> f{ sawCrossReference = True })
+                     else pure (Just ils)
         pure $ Inline mempty $ CrossReference target mbtext)
   , ("image", \target -> do
         (Attr ps kvs) <- pAttributes
@@ -1895,7 +2005,9 @@ pAttributeReference = do
       attrs <- gets docAttrs
       case M.lookup name attrs of
         Just v -> pure $ Inline mempty (Str v)
-        Nothing -> pure $ Inline mempty $ AttributeReference (AttributeName name)
+        Nothing -> do
+          setFlag $ \f -> f{ sawAttributeReference = True }
+          pure $ Inline mempty $ AttributeReference (AttributeName name)
 
 replacements :: M.Map Text Text
 replacements = M.fromList
