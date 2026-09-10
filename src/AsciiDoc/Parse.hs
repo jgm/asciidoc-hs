@@ -1,5 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TupleSections #-}
@@ -131,9 +131,62 @@ resolvePath parentPath fp
 
 --- Wrapped parser type:
 
-newtype P a = P { unP :: ReaderT ParserConfig (StateT ParserState A.Parser) a }
-  deriving (Functor, Applicative, Alternative, Monad, MonadPlus,
-            MonadFail, MonadReader ParserConfig, MonadState ParserState)
+-- A flattened ReaderT ParserConfig (StateT ParserState A.Parser): the
+-- config and state are threaded by hand so that primitive operations
+-- don't pay for two layers of transformer binds.  As with StateT over a
+-- backtracking parser, state changes made by a failed branch of (<|>)
+-- are discarded.
+newtype P a = P { unP :: ParserConfig -> ParserState
+                      -> A.Parser (a, ParserState) }
+
+instance Functor P where
+  fmap f (P m) = P $ \c s -> fmap (\(a, s') -> (f a, s')) (m c s)
+  {-# INLINE fmap #-}
+
+instance Applicative P where
+  pure a = P $ \_ s -> pure (a, s)
+  {-# INLINE pure #-}
+  P mf <*> P ma = P $ \c s -> do
+    (f, s') <- mf c s
+    (a, s'') <- ma c s'
+    pure (f a, s'')
+  {-# INLINE (<*>) #-}
+  P ma *> P mb = P $ \c s -> ma c s >>= \(_, s') -> mb c s'
+  {-# INLINE (*>) #-}
+  P ma <* P mb = P $ \c s -> do
+    (a, s') <- ma c s
+    (_, s'') <- mb c s'
+    pure (a, s'')
+  {-# INLINE (<*) #-}
+
+instance Monad P where
+  P m >>= f = P $ \c s -> m c s >>= \(a, s') -> unP (f a) c s'
+  {-# INLINE (>>=) #-}
+
+instance MonadFail P where
+  fail msg = P $ \_ _ -> fail msg
+
+instance Alternative P where
+  empty = P $ \_ _ -> empty
+  {-# INLINE empty #-}
+  P a <|> P b = P $ \c s -> a c s <|> b c s
+  {-# INLINE (<|>) #-}
+
+instance MonadPlus P
+
+instance MonadReader ParserConfig P where
+  ask = P $ \c s -> pure (c, s)
+  {-# INLINE ask #-}
+  local f (P m) = P $ \c -> m (f c)
+  {-# INLINE local #-}
+
+instance MonadState ParserState P where
+  get = P $ \_ s -> pure (s, s)
+  {-# INLINE get #-}
+  put s = P $ \_ _ -> pure ((), s)
+  {-# INLINE put #-}
+  state f = P $ \_ s -> pure (f s)
+  {-# INLINE state #-}
 
 data ParserState = ParserState
                      { counterMap :: M.Map Text (CounterType, Int)
@@ -184,7 +237,7 @@ parse p fp = parse' (ParserConfig{ filePath = fp
 parse' :: ParserConfig -> ParserState
        -> P a -> T.Text -> Either ParseError a
 parse' cfg st p t =
-  go $ A.parse (evalStateT ( runReaderT (unP p) cfg ) st) t
+  go $ A.parse (fst <$> unP p cfg st) t
  where
   go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i)
                              $ if "endOfInput" `isPrefixOf` msg
@@ -194,7 +247,8 @@ parse' cfg st p t =
   go (A.Done _i r) = Right r
 
 localP :: (ParserConfig -> ParserConfig) -> P a -> P a
-localP f (P p) = P (local f p)
+localP f (P p) = P $ \c -> p (f c)
+{-# INLINE localP #-}
 
 withBlockContext :: BlockContext -> P a -> P a
 withBlockContext bc =
@@ -204,7 +258,8 @@ withHardBreaks :: P a -> P a
 withHardBreaks = localP (\conf -> conf{ hardBreaks = True })
 
 liftP :: A.Parser a -> P a
-liftP = P . lift . lift
+liftP p = P $ \_ s -> fmap (\a -> (a, s)) p
+{-# INLINE liftP #-}
 
 vchar :: Char -> P ()
 vchar = liftP . void . A.char
@@ -231,21 +286,14 @@ isEndOfLine :: Char -> Bool
 isEndOfLine = A.isEndOfLine
 
 match :: P a -> P (T.Text, a)
-match p = P $ do
-  parseInfo <- ask
-  parserState <- get
-  lift . lift $ A.match (evalStateT (runReaderT (unP p) parseInfo) parserState)
+match p = P $ \c s ->
+  (\(t, (x, _)) -> ((t, x), s)) <$> A.match (unP p c s)
 
 -- Like match, but keeps the parser state changes made by the inner
 -- parser instead of discarding them.
 matchKeepingState :: P a -> P (T.Text, a)
-matchKeepingState p = P $ do
-  parseInfo <- ask
-  parserState <- get
-  (t, (x, newState)) <- lift . lift $
-    A.match (runStateT (runReaderT (unP p) parseInfo) parserState)
-  put newState
-  pure (t, x)
+matchKeepingState p = P $ \c s ->
+  (\(t, (x, s')) -> ((t, x), s')) <$> A.match (unP p c s)
 
 string :: T.Text -> P T.Text
 string = liftP . A.string
