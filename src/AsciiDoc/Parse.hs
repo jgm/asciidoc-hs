@@ -1532,8 +1532,26 @@ isInertChar c =
 prependStr :: [Text] -> [Inline] -> [Inline]
 prependStr [] = id
 prependStr cs =
-  (Inline mempty
-    (Str (T.pack (replaceChars (T.unpack (T.concat (reverse cs)))))):)
+  (Inline mempty (Str (replaceCharsText (T.concat (reverse cs)))):)
+
+-- Apply replaceChars, going through String only when the text can
+-- actually contain the start of a replacement.
+replaceCharsText :: Text -> Text
+replaceCharsText t
+  | mayNeedReplacement t = T.pack (replaceChars (T.unpack t))
+  | otherwise = t
+
+-- Whether any replaceChars pattern could match: one of its trigger
+-- characters occurs ('.' only counts in a pair, since it is only
+-- rewritten as part of "...").
+mayNeedReplacement :: Text -> Bool
+mayNeedReplacement = snd . T.foldl' step (False, False)
+ where
+  step acc@(_, True) _ = acc
+  step (prevDot, _) c
+    | c == '.' = (True, prevDot)
+    | otherwise = (False, c == '(' || c == '-' || c == '=' ||
+                          c == '<' || c == '\'')
 
 -- The only inline elements that can start at a letter are macros,
 -- autolinks and email autolinks, so a whole run of letters can be
