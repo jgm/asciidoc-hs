@@ -19,6 +19,8 @@ main = defaultMain
       ]
   , bgroup "formatting"
       [ bench "32KB" $ nf parseSize (formatting 32) ]
+  , bgroup "typography"
+      [ bench "32KB" $ nf parseSize (typography 32) ]
   , bgroup "table"
       [ bench (show n <> "rows") $ nf parseSize (table n)
       | n <- [250, 500, 1000 :: Int]
@@ -57,6 +59,13 @@ formatting n = T.replicate (n * 16) paragraph
  where
   paragraph = T.replicate 8 chunk <> "\n\n"  -- 8 * 8 bytes
   chunk = "a *b* `c` _d_ "
+
+-- n KB of prose with plenty of typographic replacements.
+typography :: Int -> Text
+typography n = T.replicate (n * 16) paragraph
+ where
+  paragraph = T.replicate 7 sentence <> "\n\n"  -- ~64 bytes/sentence
+  sentence = "It's odd -- the dog's list... (C) 2024 -> next <= prev now. "
 
 -- A PSV table with n rows of five cells.
 table :: Int -> Text

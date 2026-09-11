@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -22,6 +23,7 @@ import qualified Data.Text.Read as TR
 import Data.Text (Text)
 import Data.List (foldl', intersperse, isPrefixOf, sortOn)
 import qualified Data.Text.Internal as TI
+import qualified Data.Text.Unsafe as TU
 import System.FilePath
 import Control.Applicative
 import Control.Monad
@@ -1522,7 +1524,7 @@ pCellSep sep = do
 --- Inline parsing:
 
 pInlines :: P [Inline]
-pInlines = pInlines' []
+pInlines = pInlines' False []
 
 pComma :: P ()
 pComma = vchar ',' <* skipWhile isSpace
@@ -1590,49 +1592,69 @@ pQuotedAttr = do
    pure $ T.pack result
 
 -- The [Text] argument accumulates the plain text seen so far, in
--- reverse chunk order; prependStr turns it into a Str inline.
-pInlines' :: [Text] -> P [Inline]
-pInlines' cs = do
+-- reverse chunk order; prependStr turns it into a Str inline.  The
+-- Bool records whether the accumulated text can contain the start of
+-- a typographic replacement, so that prependStr can skip
+-- replaceCharsText without rescanning the text.
+pInlines' :: Bool -> [Text] -> P [Inline]
+pInlines' !trig cs = P $ \cfg st t@(TI.Text arr off len) kf ks ->
   -- Consume a whole run of plain characters in a single scan.  Only a
   -- few characters can require anything other than plain text: the
   -- characters that can begin an inline element or line comment, the
   -- ':' that ends a macro or autolink name, and the '@' of an email
   -- autolink.  Everything in between (letters, spaces, ordinary
-  -- punctuation) is consumed here without trying any parsers.
-  plain <- takeWhile isPlainInlineChar
-  let cs' = if T.null plain then cs else plain : cs
-  mbc <- peekChar
-  case mbc of
-    Nothing -> pure $ prependStr cs' []
-    Just c -> pInlineBoundary c cs'
+  -- punctuation) is consumed here without trying any parsers.  The
+  -- scan also notes replacement triggers ('-', '=', or a ".." pair).
+  let chunk i = if i == 0 then cs else TI.text arr off i : cs
+      go !i !tr !prevDot
+        | i >= len = ks (prependStr tr (chunk i) []) st T.empty
+        | otherwise =
+            case TU.iter t i of
+              TU.Iter c d
+                | isPlainInlineChar c ->
+                    go (i + d)
+                       (tr || c == '-' || c == '=' || (prevDot && c == '.'))
+                       (c == '.')
+                | otherwise ->
+                    unP (pInlineBoundary c tr (chunk i)) cfg st
+                        (TI.text arr (off + i) (len - i)) kf ks
+  in go 0 trig False
 
 -- Handle a stop character of the plain-text scan (not yet consumed).
-pInlineBoundary :: Char -> [Text] -> P [Inline]
-pInlineBoundary c cs
-  | c == ':' = pMacroAtColon cs plainChar
-  | c == '@' = pEmailAtBoundary cs plainChar
-  | c == '/' = (pLineComment *> pInlines' cs) <|> plainChar
+pInlineBoundary :: Char -> Bool -> [Text] -> P [Inline]
+pInlineBoundary c !trig cs
+  | c == ':' = pMacroAtColon trig cs plainChar
+  | c == '@' = pEmailAtBoundary trig cs plainChar
+  | c == '/' = (pLineComment *> pInlines' trig cs) <|> plainChar
   | otherwise =
       -- An inline start character.  '+' and '_' can also occur inside
       -- the local part of an email autolink, whose attempt must come
       -- first (it can only succeed when a '@' with a valid domain
       -- follows, in which case the formatting parse would misfire).
-      (if isEmailLocalChar c then pEmailAtBoundary cs else id) $
+      (if isEmailLocalChar c then pEmailAtBoundary trig cs else id) $
       (do il' <- pInline cs
           let il = case il' of
                      Inline (Attr ps kvs) (Span ils)
                        | Nothing <- M.lookup "role" kvs
                        -> Inline (Attr ps kvs) (Highlight ils)
                      _ -> il'
-          prependStr cs . (il:) <$> pInlines' [])
+          prependStr trig cs . (il:) <$> pInlines' False [])
       <|> plainChar
  where
   -- Consume the stop character (which failed to begin anything
-  -- special), along with any following plain run.
+  -- special) as a chunk of its own; the next pInlines' scan picks up
+  -- the plain run that follows.
   plainChar = do
     _ <- anyChar
-    rest <- takeWhile isPlainInlineChar
-    pInlines' (T.cons c rest : cs)
+    pInlines' (trig || isTriggerStop c) (T.singleton c : cs)
+
+-- Stop characters of the plain scan that are also replacement
+-- triggers.  ('-', '=' and '.' are not stop characters, so they are
+-- detected by the pInlines' scan instead; a ".." pair cannot
+-- straddle two chunks, since the character between them is a stop
+-- character and hence not a '.'.)
+isTriggerStop :: Char -> Bool
+isTriggerStop c = c == '\'' || c == '(' || c == '<'
 
 -- Characters that cannot begin an inline element or line comment, end
 -- a macro or autolink name, or start the domain of an email autolink.
@@ -1660,29 +1682,15 @@ isPlainInlineChar c =
     '@'  -> False
     _    -> True
 
-prependStr :: [Text] -> [Inline] -> [Inline]
-prependStr [] = id
-prependStr cs =
-  (Inline mempty (Str (replaceCharsText (T.concat (reverse cs)))):)
-
--- Apply replaceChars, going through String only when the text can
--- actually contain the start of a replacement.
-replaceCharsText :: Text -> Text
-replaceCharsText t
-  | mayNeedReplacement t = T.pack (replaceChars (T.unpack t))
-  | otherwise = t
-
--- Whether any replaceChars pattern could match: one of its trigger
--- characters occurs ('.' only counts in a pair, since it is only
--- rewritten as part of "...").
-mayNeedReplacement :: Text -> Bool
-mayNeedReplacement = snd . T.foldl' step (False, False)
+-- The Bool says whether the text can contain the start of a
+-- typographic replacement; it is tracked during scanning so that no
+-- extra pass over the text is needed here.
+prependStr :: Bool -> [Text] -> [Inline] -> [Inline]
+prependStr _ [] = id
+prependStr trig cs =
+  (Inline mempty (Str (replaced (T.concat (reverse cs)))):)
  where
-  step acc@(_, True) _ = acc
-  step (prevDot, _) c
-    | c == '.' = (True, prevDot)
-    | otherwise = (False, c == '(' || c == '-' || c == '=' ||
-                          c == '<' || c == '\'')
+  replaced = if trig then replaceCharsText else id
 
 -- A macro or autolink name ends at a ':'.  A name contains no
 -- plain-scan stop characters, so it must be a suffix of the plain
@@ -1691,8 +1699,8 @@ mayNeedReplacement = snd . T.foldl' step (False, False)
 -- be checked, leftmost (i.e. longest) first.  This also covers names
 -- with a non-letter tail like indexterm2, whose '2' was consumed by
 -- the plain scan.
-pMacroAtColon :: [Text] -> P [Inline] -> P [Inline]
-pMacroAtColon (piece : rest) alt
+pMacroAtColon :: Bool -> [Text] -> P [Inline] -> P [Inline]
+pMacroAtColon trig (piece : rest) alt
   | not (T.null piece)
   , Just candidates <- M.lookup (T.last piece) nestedInlineStartsByLastChar
   = foldr tryCandidate alt candidates
@@ -1703,9 +1711,9 @@ pMacroAtColon (piece : rest) alt
             il <- p
             let pre = T.dropEnd (T.length name) piece
             let cs' = if T.null pre then rest else pre : rest
-            prependStr cs' . (il:) <$> pInlines' []) <|> alt'
+            prependStr trig cs' . (il:) <$> pInlines' False []) <|> alt'
     | otherwise = alt'
-pMacroAtColon _ alt = alt
+pMacroAtColon _ _ alt = alt
 
 -- Try email autolinks at a '@' (or at a '+' or '_', which can occur
 -- inside a local part).  A local part starts at the beginning of a
@@ -1714,8 +1722,8 @@ pMacroAtColon _ alt = alt
 -- leftmost first.  Starts in earlier chunks need not be considered:
 -- any that could reach this position was already tried, with the same
 -- local part and input position, at the boundary ending its chunk.
-pEmailAtBoundary :: [Text] -> P [Inline] -> P [Inline]
-pEmailAtBoundary (piece : rest) alt
+pEmailAtBoundary :: Bool -> [Text] -> P [Inline] -> P [Inline]
+pEmailAtBoundary trig (piece : rest) alt
   | not (T.null localSpan) = foldr tryStart alt (emailStarts localSpan)
  where
   localSpan = T.takeWhileEnd isEmailLocalChar piece
@@ -1724,8 +1732,8 @@ pEmailAtBoundary (piece : rest) alt
         il <- pEmailAutolinkRest (sfx <> more)
         let pre = T.dropEnd (T.length sfx) piece
         let cs' = if T.null pre then rest else pre : rest
-        prependStr cs' . (il:) <$> pInlines' []) <|> alt'
-pEmailAtBoundary _ alt = alt
+        prependStr trig cs' . (il:) <$> pInlines' False []) <|> alt'
+pEmailAtBoundary _ _ alt = alt
 
 -- Suffixes of the given text beginning at the start of a run of
 -- letters, leftmost first: the candidate starts of an email
@@ -1756,22 +1764,75 @@ nestedInlineStartsByLastChar =
   M.fromListWith (flip (++))
     [ (T.last name, [x]) | x@(name, _) <- nestedInlineStarts ]
 
-replaceChars :: [Char] -> [Char]
-replaceChars [] = []
-replaceChars ('(':'C':')':cs) = '\169':replaceChars cs
-replaceChars ('(':'R':')':cs) = '\174':replaceChars cs
-replaceChars ('(':'T':'M':')':cs) = '\8482':replaceChars cs
-replaceChars (x:'-':'-':y:cs)
-  | x == ' ', y == ' ' = '\8201':'\8212':'\8201':replaceChars cs
-  | isAlphaNum x, isAlphaNum y = x:'\8212':'\8203':replaceChars (y:cs)
-  | otherwise = x:'-':'-':replaceChars (y:cs)
-replaceChars ('.':'.':'.':cs) = '\8230':replaceChars cs
-replaceChars ('-':'>':cs) = '\8594':replaceChars cs
-replaceChars ('=':'>':cs) = '\8658':replaceChars cs
-replaceChars ('<':'-':cs) = '\8592':replaceChars cs
-replaceChars ('<':'=':cs) = '\8656':replaceChars cs
-replaceChars ('\'':cs) = '\8217':replaceChars cs
-replaceChars (c:cs) = c:replaceChars cs
+-- Apply typographic replacements in a single pass, splicing
+-- replacements between unchanged slices of the input.  Equivalent to
+-- matching, at each position, the first of these patterns (x and y
+-- are arbitrary characters):
+--
+--   (C) (R) (TM)             -> copyright, registered, trademark sign
+--   " -- "                   -> thin space, em dash, thin space
+--   x--y  (x, y alphanumeric)-> x, em dash, zero-width space, y...
+--   x--y  (otherwise)        -> unchanged (consuming x "--")
+--   ...                      -> ellipsis
+--   ->  =>  <-  <=           -> arrows
+--   '                        -> right single quotation mark
+replaceCharsText :: Text -> Text
+replaceCharsText t@(TI.Text arr toff len) = go [] 0 0 '\0'
+ where
+  slice s e = TI.text arr (toff + s) (e - s)
+  charAt j = case TU.iter t j of TU.Iter c _ -> c
+  -- acc: finished output pieces in reverse order; s: start of the
+  -- current unchanged run; i: current position (byte offsets); prev:
+  -- the character ending at i (only meaningful when i > s).
+  go acc !s !i !prev
+    | i >= len =
+        case acc of
+          [] -> t                              -- nothing was replaced
+          _ -> T.concat (reverse (slice s i : acc))
+    | otherwise =
+        case c0 of
+          '-' | i1 < len, charAt i1 == '-' ->  -- a "--" pair at (i, i1)
+                  if i > s && i2 < len
+                    then                       -- x--y with x = prev
+                      let y = charAt i2
+                      in if prev == ' ' && y == ' '
+                           then emit (i - 1) "\8201\8212\8201" (i + 3)
+                         else if isAlphaNum prev && isAlphaNum y
+                           then emit i "\8212\8203" i2
+                         else go acc s i2 '-'  -- x "--" kept as-is
+                    else if i == s && i2 < len && charAt i2 == '-'
+                            && i3 < len
+                           then go acc s i3 '-' -- x--y, x a dash itself
+                           else plain
+              | i1 < len, charAt i1 == '>' -> emit i "\8594" i2
+          '(' | i2 < len, charAt i2 == ')', charAt i1 == 'C' ->
+                  emit i "\169" i3
+              | i2 < len, charAt i2 == ')', charAt i1 == 'R' ->
+                  emit i "\174" i3
+              | i3 < len, charAt i1 == 'T', charAt i2 == 'M',
+                charAt i3 == ')' -> emit i "\8482" (i + 4)
+          '.' | i2 < len, charAt i1 == '.', charAt i2 == '.' ->
+                  emit i "\8230" i3
+          '=' | i1 < len, charAt i1 == '>' -> emit i "\8658" i2
+          '<' | i1 < len, charAt i1 == '-' ->
+                  if i2 < len && charAt i2 == '-' && i3 < len
+                    then go acc s i3 '-'       -- x--y with x = '<'
+                    else emit i "\8592" i2
+              | i1 < len, charAt i1 == '=' -> emit i "\8656" i2
+          '\'' | i2 < len, charAt i1 == '-', charAt i2 == '-',
+                 i3 < len -> go acc s i3 '-'   -- x--y with x = '\''
+               | otherwise -> emit i "\8217" i1
+          _ -> plain
+    where
+      TU.Iter c0 d0 = TU.iter t i
+      i1 = i + 1
+      i2 = i + 2
+      i3 = i + 3
+      plain = go acc s (i + d0) c0
+      emit e piece j =
+        let acc' | e > s = piece : slice s e : acc
+                 | otherwise = piece : acc
+        in go acc' j j '\0'
 
 pShorthandAttributes :: P Attr
 pShorthandAttributes = do
