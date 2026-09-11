@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -20,15 +21,14 @@ import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import Data.Text (Text)
 import Data.List (foldl', intersperse, isPrefixOf, sortOn)
-import qualified Data.Attoparsec.Text as A
-import qualified Data.Attoparsec.Combinator as A (lookAhead)
+import qualified Data.Text.Internal as TI
 import System.FilePath
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Reader
 import Data.Char (isAlphaNum, isAscii, isSpace, isLetter, isPunctuation, chr, isDigit,
-                  isUpper, isLower, ord)
+                  isHexDigit, digitToInt, isUpper, isLower, ord)
 import AsciiDoc.AST
 import AsciiDoc.Generic
 -- import Debug.Trace
@@ -132,61 +132,72 @@ resolvePath parentPath fp
 
 --- Wrapped parser type:
 
--- A flattened ReaderT ParserConfig (StateT ParserState A.Parser): the
--- config and state are threaded by hand so that primitive operations
--- don't pay for two layers of transformer binds.  As with StateT over a
--- backtracking parser, state changes made by a failed branch of (<|>)
--- are discarded.
-newtype P a = P { unP :: ParserConfig -> ParserState
-                      -> A.Parser (a, ParserState) }
+-- A parser in continuation-passing style over the whole input Text.
+-- The config, state and remaining input are threaded by hand and
+-- passed directly to a success continuation, so binds allocate no
+-- intermediate results.  Incremental (chunked) input is not
+-- supported -- the whole document is in memory anyway -- which makes
+-- backtracking cheap: (<|>) simply re-runs the second parser with the
+-- state and input it saved.  As with StateT over a backtracking
+-- parser, state changes made by a failed branch of (<|>) are
+-- discarded.  The failure continuation receives the message and the
+-- remaining input at the failure site (used to report a position).
+newtype P a = P { unP :: forall r. ParserConfig -> ParserState -> Text
+                      -> (String -> Text -> r)              -- failure
+                      -> (a -> ParserState -> Text -> r)    -- success
+                      -> r }
 
 instance Functor P where
-  fmap f (P m) = P $ \c s -> fmap (\(a, s') -> (f a, s')) (m c s)
+  fmap f (P m) = P $ \c s t kf ks -> m c s t kf (\a s' t' -> ks (f a) s' t')
   {-# INLINE fmap #-}
 
 instance Applicative P where
-  pure a = P $ \_ s -> pure (a, s)
+  pure a = P $ \_ s t _ ks -> ks a s t
   {-# INLINE pure #-}
-  P mf <*> P ma = P $ \c s -> do
-    (f, s') <- mf c s
-    (a, s'') <- ma c s'
-    pure (f a, s'')
+  P mf <*> P ma = P $ \c s t kf ks ->
+    mf c s t kf (\f s' t' ->
+      ma c s' t' kf (\a s'' t'' -> ks (f a) s'' t''))
   {-# INLINE (<*>) #-}
-  P ma *> P mb = P $ \c s -> ma c s >>= \(_, s') -> mb c s'
+  P ma *> P mb = P $ \c s t kf ks ->
+    ma c s t kf (\_ s' t' -> mb c s' t' kf ks)
   {-# INLINE (*>) #-}
-  P ma <* P mb = P $ \c s -> do
-    (a, s') <- ma c s
-    (_, s'') <- mb c s'
-    pure (a, s'')
+  P ma <* P mb = P $ \c s t kf ks ->
+    ma c s t kf (\a s' t' ->
+      mb c s' t' kf (\_ s'' t'' -> ks a s'' t''))
   {-# INLINE (<*) #-}
 
 instance Monad P where
-  P m >>= f = P $ \c s -> m c s >>= \(a, s') -> unP (f a) c s'
+  P m >>= f = P $ \c s t kf ks ->
+    m c s t kf (\a s' t' -> unP (f a) c s' t' kf ks)
   {-# INLINE (>>=) #-}
 
 instance MonadFail P where
-  fail msg = P $ \_ _ -> fail msg
+  fail msg = P $ \_ _ t kf _ -> kf ("Failed reading: " <> msg) t
 
 instance Alternative P where
-  empty = P $ \_ _ -> empty
+  empty = P $ \_ _ t kf _ -> kf "empty" t
   {-# INLINE empty #-}
-  P a <|> P b = P $ \c s -> a c s <|> b c s
+  -- Note that the success continuation is passed through unchanged:
+  -- once a branch succeeds, a later failure calls the failure
+  -- continuation in scope at that point, not the saved one, so it
+  -- does not backtrack into the right branch.
+  P a <|> P b = P $ \c s t kf ks -> a c s t (\_ _ -> b c s t kf ks) ks
   {-# INLINE (<|>) #-}
 
 instance MonadPlus P
 
 instance MonadReader ParserConfig P where
-  ask = P $ \c s -> pure (c, s)
+  ask = P $ \c s t _ ks -> ks c s t
   {-# INLINE ask #-}
   local f (P m) = P $ \c -> m (f c)
   {-# INLINE local #-}
 
 instance MonadState ParserState P where
-  get = P $ \_ s -> pure (s, s)
+  get = P $ \_ s t _ ks -> ks s s t
   {-# INLINE get #-}
-  put s = P $ \_ _ -> pure ((), s)
+  put s = P $ \_ _ t _ ks -> ks () s t
   {-# INLINE put #-}
-  state f = P $ \_ s -> pure (f s)
+  state f = P $ \_ s t _ ks -> case f s of (a, s') -> ks a s' t
   {-# INLINE state #-}
 
 data ParserState = ParserState
@@ -238,14 +249,13 @@ parse p fp = parse' (ParserConfig{ filePath = fp
 parse' :: ParserConfig -> ParserState
        -> P a -> T.Text -> Either ParseError a
 parse' cfg st p t =
-  go $ A.parse (fst <$> unP p cfg st) t
+  unP p cfg st t failure success
  where
-  go (A.Fail i _ msg) = Left $ ParseError (T.length t - T.length i)
-                             $ if "endOfInput" `isPrefixOf` msg
-                                  then "Unexpected " <> show (T.take 20 i)
-                                  else msg
-  go (A.Partial continue) = go (continue "")
-  go (A.Done _i r) = Right r
+  failure msg i = Left $ ParseError (T.length t - T.length i)
+                       $ if "endOfInput" `isPrefixOf` msg
+                            then "Unexpected " <> show (T.take 20 i)
+                            else msg
+  success a _ _ = Right a
 
 localP :: (ParserConfig -> ParserConfig) -> P a -> P a
 localP f (P p) = P $ \c -> p (f c)
@@ -258,85 +268,157 @@ withBlockContext bc =
 withHardBreaks :: P a -> P a
 withHardBreaks = localP (\conf -> conf{ hardBreaks = True })
 
-liftP :: A.Parser a -> P a
-liftP p = P $ \_ s -> fmap (\a -> (a, s)) p
-{-# INLINE liftP #-}
+failP :: String -> P a
+failP msg = P $ \_ _ t kf _ -> kf msg t
 
 vchar :: Char -> P ()
-vchar = liftP . void . A.char
+vchar c = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just (c', t') | c' == c -> ks () s t'
+    _ -> kf "satisfy" t
+{-# INLINE vchar #-}
 
 char :: Char -> P Char
-char = liftP . A.char
+char c = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just (c', t') | c' == c -> ks c s t'
+    _ -> kf "satisfy" t
+{-# INLINE char #-}
 
 peekChar :: P (Maybe Char)
-peekChar = liftP A.peekChar
+peekChar = P $ \_ s t _ ks ->
+  case T.uncons t of
+    Just (c, _) -> ks (Just c) s t
+    Nothing -> ks Nothing s t
+{-# INLINE peekChar #-}
 
 peekChar' :: P Char
-peekChar' = liftP A.peekChar'
+peekChar' = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just (c, _) -> ks c s t
+    Nothing -> kf "not enough input" t
+{-# INLINE peekChar' #-}
 
 anyChar :: P Char
-anyChar = liftP A.anyChar
+anyChar = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just (c, t') -> ks c s t'
+    Nothing -> kf "not enough input" t
+{-# INLINE anyChar #-}
 
 satisfy :: (Char -> Bool) -> P Char
-satisfy = liftP . A.satisfy
+satisfy f = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just (c, t') | f c -> ks c s t'
+    _ -> kf "satisfy" t
+{-# INLINE satisfy #-}
 
 space :: P Char
-space = liftP A.space
+space = satisfy isSpace
 
 isEndOfLine :: Char -> Bool
-isEndOfLine = A.isEndOfLine
+isEndOfLine c = c == '\n' || c == '\r'
+
+-- The parser only ever advances by taking suffixes of the input, all
+-- slices of one underlying array, so the text consumed between two
+-- points is the prefix of the earlier remainder whose length is the
+-- difference of the remainders' lengths.
+consumed :: Text -> Text -> Text
+consumed (TI.Text arr off len) (TI.Text _ _ len') =
+  TI.text arr off (len - len')
+{-# INLINE consumed #-}
 
 match :: P a -> P (T.Text, a)
-match p = P $ \c s ->
-  (\(t, (x, _)) -> ((t, x), s)) <$> A.match (unP p c s)
+match p = P $ \c s t kf ks ->
+  unP p c s t kf (\x _ t' -> ks (consumed t t', x) s t')
 
 -- Like match, but keeps the parser state changes made by the inner
 -- parser instead of discarding them.
 matchKeepingState :: P a -> P (T.Text, a)
-matchKeepingState p = P $ \c s ->
-  (\(t, (x, s')) -> ((t, x), s')) <$> A.match (unP p c s)
+matchKeepingState p = P $ \c s t kf ks ->
+  unP p c s t kf (\x s' t' -> ks (consumed t t', x) s' t')
+
+-- Run a parser, then restore the input (and state) as they were.
+lookAhead :: P a -> P a
+lookAhead (P m) = P $ \c s t kf ks -> m c s t kf (\a _ _ -> ks a s t)
 
 string :: T.Text -> P T.Text
-string = liftP . A.string
+string pat = P $ \_ s t kf ks ->
+  case T.stripPrefix pat t of
+    Just t' -> ks pat s t'
+    Nothing -> kf "string" t
+{-# INLINE string #-}
 
 decimal :: Integral a => P a
-decimal = liftP A.decimal
+decimal = P $ \_ s t kf ks ->
+  case T.span isDigit t of
+    (ds, t') | T.null ds -> kf "decimal" t
+             | otherwise -> ks (T.foldl' step 0 ds) s t'
+ where
+  step n d = n * 10 + fromIntegral (ord d - 48)
+
+hexadecimal :: Integral a => P a
+hexadecimal = P $ \_ s t kf ks ->
+  case T.span isHexDigit t of
+    (ds, t') | T.null ds -> kf "hexadecimal" t
+             | otherwise -> ks (T.foldl' step 0 ds) s t'
+ where
+  step n d = n * 16 + fromIntegral (digitToInt d)
 
 endOfInput :: P ()
-endOfInput = liftP A.endOfInput
+endOfInput = P $ \_ s t kf ks ->
+  if T.null t then ks () s t else kf "endOfInput" t
 
 endOfLine :: P ()
-endOfLine = liftP A.endOfLine
+endOfLine = P $ \_ s t kf ks ->
+  case T.uncons t of
+    Just ('\n', t') -> ks () s t'
+    Just ('\r', t') | Just ('\n', t'') <- T.uncons t' -> ks () s t''
+    _ -> kf "endOfLine" t
+{-# INLINE endOfLine #-}
 
 takeWhile :: (Char -> Bool) -> P T.Text
-takeWhile f = liftP (A.takeWhile f)
+takeWhile f = P $ \_ s t _ ks ->
+  case T.span f t of (a, t') -> ks a s t'
+{-# INLINE takeWhile #-}
 
 takeWhile1 :: (Char -> Bool) -> P T.Text
-takeWhile1 f = liftP (A.takeWhile1 f)
+takeWhile1 f = P $ \_ s t kf ks ->
+  case T.span f t of
+    (a, t') | T.null a -> kf "takeWhile1" t
+            | otherwise -> ks a s t'
+{-# INLINE takeWhile1 #-}
 
 skipWhile :: (Char -> Bool) -> P ()
-skipWhile f = liftP (A.skipWhile f)
+skipWhile f = P $ \_ s t _ ks -> ks () s (T.dropWhile f t)
+{-# INLINE skipWhile #-}
 
 skipMany :: P a -> P ()
-skipMany = A.skipMany
+skipMany p = go
+ where
+  go = (p *> go) <|> pure ()
 
 option :: Alternative f => a -> f a -> f a
-option = A.option
+option x p = p <|> pure x
 
 choice :: [P a] -> P a
-choice = A.choice
+choice = foldr (<|>) (failP "choice")
 
 count :: Int -> P a -> P [a]
-count = A.count
+count = replicateM
 
 manyTill :: P a -> P b  -> P [a]
-manyTill = A.manyTill
+manyTill p end = go
+ where
+  go = ([] <$ end) <|> liftA2 (:) p go
 
 sepBy :: P a -> P b -> P [a]
-sepBy = A.sepBy
+sepBy p s = sepBy1 p s <|> pure []
 
 sepBy1 :: P a -> P b -> P [a]
-sepBy1 = A.sepBy1
+sepBy1 p s = go
+ where
+  go = liftA2 (:) p ((s *> go) <|> pure [])
 
 --- Block parsing:
 
@@ -723,7 +805,7 @@ pDefinitionListItem = do
   -- The term/definition separator must occur before the end of the
   -- line, so ordinary paragraph text can be rejected with a single
   -- substring check instead of the chunked term scan below.
-  restOfLine <- liftP (A.lookAhead (A.takeWhile (not . A.isEndOfLine)))
+  restOfLine <- lookAhead (takeWhile (not . isEndOfLine))
   guard $ "::" `T.isInfixOf` restOfLine
   let marker = (do t <- takeWhile1 (== ':')
                    case contexts of
@@ -1180,7 +1262,7 @@ pColspec :: P ColumnSpec
 pColspec = ColumnSpec <$> optional pHorizAlign
                       <*> optional pVertAlign
                       <*> (pWidth <|> pure Nothing)
-                      <*> (toCellStyle <$> satisfy (A.inClass "adehlms")
+                      <*> (toCellStyle <$> satisfy isCellStyleChar
                              <|> pure Nothing)
 
 pHorizAlign :: P HorizAlign
@@ -1293,7 +1375,7 @@ pTableCellPSV mbsep allowNewlines colspecs = do
   -- consumed at once, and the expensive lookahead for a separator or
   -- border is only needed at characters that could begin one.
   let couldStartCellSep c = c == sep || c == ' ' || c == '\t' ||
-        isDigit c || A.inClass ".<^>adehlms" c
+        isDigit c || isCellSpecChar c
   let couldStartBorder c = c == '|' || c == ':' || c == ','
   let isPlainCellChar c = not (couldStartCellSep c) &&
         not (couldStartBorder c) && c /= '\\' && not (isEndOfLine c)
@@ -1369,6 +1451,29 @@ data CellData =
   , cStyle :: Maybe CellStyle }
   deriving (Show)
 
+-- The letters that may denote a cell style ("adehlms").
+isCellStyleChar :: Char -> Bool
+isCellStyleChar c =
+  case c of
+    'a' -> True
+    'd' -> True
+    'e' -> True
+    'h' -> True
+    'l' -> True
+    'm' -> True
+    's' -> True
+    _   -> False
+
+-- The characters that may occur in a cell spec (".<^>adehlms").
+isCellSpecChar :: Char -> Bool
+isCellSpecChar c =
+  case c of
+    '.' -> True
+    '<' -> True
+    '^' -> True
+    '>' -> True
+    _   -> isCellStyleChar c
+
 toCellStyle :: Char -> Maybe CellStyle
 toCellStyle 'a' = Just AsciiDocStyle
 toCellStyle 'd' = Just DefaultStyle
@@ -1391,7 +1496,7 @@ pCellSep sep = do
   -- separator, so that speculative lookaheads stay cheap.
   mbc <- peekChar
   case mbc of
-    Just c | c == sep || isDigit c || A.inClass ".<^>adehlms" c -> pure ()
+    Just c | c == sep || isDigit c || isCellSpecChar c -> pure ()
     _ -> mzero
   mult <- option 1 pMultiplier
   (colspan, rowspan) <- option (Nothing, Nothing) $ do
@@ -1402,7 +1507,7 @@ pCellSep sep = do
     pure (a, b)
   halign <- optional pHorizAlign
   valign <- optional pVertAlign
-  sty <- (toCellStyle <$> satisfy (A.inClass "adehlms")) <|> pure Nothing
+  sty <- (toCellStyle <$> satisfy isCellStyleChar) <|> pure Nothing
   notFollowedBy pTableBorder <* vchar sep
   pure $ CellData
     { cDuplicate = mult
@@ -1827,7 +1932,7 @@ pNumericCharacterReference =
   vchar '#' *> (((vchar 'x' <|> vchar 'X') *> pHexReference) <|> pDecimalReference)
  where
   pHexReference =
-    Inline mempty . Str . T.singleton . chr <$> (liftP A.hexadecimal <* vchar ';')
+    Inline mempty . Str . T.singleton . chr <$> (hexadecimal <* vchar ';')
   pDecimalReference =
     Inline mempty . Str . T.singleton . chr <$> (decimal <* vchar ';')
 
