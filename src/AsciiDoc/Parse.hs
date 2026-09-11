@@ -1488,46 +1488,72 @@ pQuotedAttr = do
 -- reverse chunk order; prependStr turns it into a Str inline.
 pInlines' :: [Text] -> P [Inline]
 pInlines' cs = do
-  -- Dispatch on the next character: only try the parsers that can
-  -- possibly succeed there, instead of running every alternative (and
-  -- paying for its failure) at each position.
+  -- Consume a whole run of plain characters in a single scan.  Only a
+  -- few characters can require anything other than plain text: the
+  -- characters that can begin an inline element or line comment, the
+  -- ':' that ends a macro or autolink name, and the '@' of an email
+  -- autolink.  Everything in between (letters, spaces, ordinary
+  -- punctuation) is consumed here without trying any parsers.
+  plain <- takeWhile isPlainInlineChar
+  let cs' = if T.null plain then cs else plain : cs
   mbc <- peekChar
   case mbc of
-    Nothing -> pure $ addStr []
-    Just c
-      | isLetter c -> pLetterRun cs
-      | c == '/' -> (pLineComment *> pInlines' cs) <|> pPlainChar c
-      | isInlineStartChar c ->
-          (do il' <- pInline cs
-              let il = case il' of
-                         Inline (Attr ps kvs) (Span ils)
-                           | Nothing <- M.lookup "role" kvs
-                           -> Inline (Attr ps kvs) (Highlight ils)
-                         _ -> il'
-              addStr . (il:) <$> pInlines' [])
-          <|> pPlainChar c
-      | otherwise -> do
-          inert <- takeWhile1 isInertChar
-          pInlines' (inert : cs)
+    Nothing -> pure $ prependStr cs' []
+    Just c -> pInlineBoundary c cs'
+
+-- Handle a stop character of the plain-text scan (not yet consumed).
+pInlineBoundary :: Char -> [Text] -> P [Inline]
+pInlineBoundary c cs
+  | c == ':' = pMacroAtColon cs plainChar
+  | c == '@' = pEmailAtBoundary cs plainChar
+  | c == '/' = (pLineComment *> pInlines' cs) <|> plainChar
+  | otherwise =
+      -- An inline start character.  '+' and '_' can also occur inside
+      -- the local part of an email autolink, whose attempt must come
+      -- first (it can only succeed when a '@' with a valid domain
+      -- follows, in which case the formatting parse would misfire).
+      (if isEmailLocalChar c then pEmailAtBoundary cs else id) $
+      (do il' <- pInline cs
+          let il = case il' of
+                     Inline (Attr ps kvs) (Span ils)
+                       | Nothing <- M.lookup "role" kvs
+                       -> Inline (Attr ps kvs) (Highlight ils)
+                     _ -> il'
+          prependStr cs . (il:) <$> pInlines' [])
+      <|> plainChar
  where
-  addStr = prependStr cs
-  -- Consume a character that failed to start an inline element (or
-  -- line comment), along with any following inert run.
-  pPlainChar c = do
+  -- Consume the stop character (which failed to begin anything
+  -- special), along with any following plain run.
+  plainChar = do
     _ <- anyChar
-    inert <- takeWhile isInertChar
-    pInlines' (T.cons c inert : cs)
+    rest <- takeWhile isPlainInlineChar
+    pInlines' (T.cons c rest : cs)
 
--- Characters that can begin an inline element (see pInline).
-isInlineStartChar :: Char -> Bool
-isInlineStartChar c = elem c ("*_`#~^+\"'({\\<&[" :: [Char])
-
--- Characters that cannot begin any inline element or line comment, so
--- a run of them can be consumed at once without retrying the inline
--- parsers at each position.
-isInertChar :: Char -> Bool
-isInertChar c =
-  not (isLetter c) && not (isInlineStartChar c) && c /= '/'
+-- Characters that cannot begin an inline element or line comment, end
+-- a macro or autolink name, or start the domain of an email autolink.
+-- A run of them can be consumed at once without trying any parsers.
+isPlainInlineChar :: Char -> Bool
+isPlainInlineChar c =
+  case c of
+    '*'  -> False
+    '_'  -> False
+    '`'  -> False
+    '#'  -> False
+    '~'  -> False
+    '^'  -> False
+    '+'  -> False
+    '"'  -> False
+    '\'' -> False
+    '('  -> False
+    '{'  -> False
+    '\\' -> False
+    '<'  -> False
+    '&'  -> False
+    '['  -> False
+    '/'  -> False
+    ':'  -> False
+    '@'  -> False
+    _    -> True
 
 prependStr :: [Text] -> [Inline] -> [Inline]
 prependStr [] = id
@@ -1553,71 +1579,77 @@ mayNeedReplacement = snd . T.foldl' step (False, False)
     | otherwise = (False, c == '(' || c == '-' || c == '=' ||
                           c == '<' || c == '\'')
 
--- The only inline elements that can start at a letter are macros,
--- autolinks and email autolinks, so a whole run of letters can be
--- consumed at once and just those candidates tried.  A macro or
--- autolink name is followed by ':' (possibly after a non-letter rest
--- of the name, like the '2' of indexterm2), which ends the run, so
--- its letter-only prefix must be a suffix of the run; only those few
--- suffix positions need to be tried, leftmost first.  An email
--- autolink can only usefully start at the beginning of the run, since
--- every letter is a valid local-part character and the greedy
--- local-part scan ends at the same place either way.  This makes
--- parsing a run of letters linear instead of quadratic in its length.
-pLetterRun :: [Text] -> P [Inline]
-pLetterRun cs = do
-  w <- takeWhile1 isLetter
-  let plain = pInlines' (w : cs)
-  let candidates = [ x | x@(letters, _, _) <-
-                           M.findWithDefault [] (T.last w) nestedInlineStartsByLastLetter
-                       , letters `T.isSuffixOf` w ]
-  let (atStart, nested) =
-        span (\(letters, _, _) -> T.length letters == T.length w) candidates
-  let tryEmail = do
-        more <- takeWhile isEmailLocalChar
-        il <- pEmailAutolinkRest (w <> more)
-        prependStr cs . (il:) <$> pInlines' []
-  -- An email autolink continues with more local-part characters or the
-  -- '@'; anything else after the letter run rules it out, so the
-  -- attempt (and its backtracking) can be skipped.
-  mbNext <- peekChar
-  let emailPossible = case mbNext of
-        Just d -> d == '@' || isEmailLocalChar d
-        Nothing -> False
-  let withEmail p = if emailPossible then tryEmail <|> p else p
-  foldr (tryNested w) (withEmail (foldr (tryNested w) plain nested)) atStart
+-- A macro or autolink name ends at a ':'.  A name contains no
+-- plain-scan stop characters, so it must be a suffix of the plain
+-- text accumulated since the last boundary; only the few candidates
+-- whose last character matches the character before the ':' need to
+-- be checked, leftmost (i.e. longest) first.  This also covers names
+-- with a non-letter tail like indexterm2, whose '2' was consumed by
+-- the plain scan.
+pMacroAtColon :: [Text] -> P [Inline] -> P [Inline]
+pMacroAtColon (piece : rest) alt
+  | not (T.null piece)
+  , Just candidates <- M.lookup (T.last piece) nestedInlineStartsByLastChar
+  = foldr tryCandidate alt candidates
  where
-  tryNested w (letters, nameRest, p) alt =
-    (do void $ string (nameRest <> ":")
-        il <- p
-        let pre = T.dropEnd (T.length letters) w
-        let cs' = if T.null pre then cs else pre : cs
-        prependStr cs' . (il:) <$> pInlines' [])
-    <|> alt
+  tryCandidate (name, p) alt'
+    | name `T.isSuffixOf` piece =
+        (do vchar ':'
+            il <- p
+            let pre = T.dropEnd (T.length name) piece
+            let cs' = if T.null pre then rest else pre : rest
+            prependStr cs' . (il:) <$> pInlines' []) <|> alt'
+    | otherwise = alt'
+pMacroAtColon _ alt = alt
 
--- Possible starts of macros and autolinks, as (letter-only prefix of
--- the name, rest of the name, parser for what follows the name and
--- ':').  Sorted by decreasing prefix length, i.e. by increasing
--- starting position within a run of letters, so that the leftmost
--- match wins; macros come before autolink schemes of the same name.
-nestedInlineStarts :: [(Text, Text, P Inline)]
+-- Try email autolinks at a '@' (or at a '+' or '_', which can occur
+-- inside a local part).  A local part starts at the beginning of a
+-- run of letters; every candidate start lies in the trailing run of
+-- email-local characters of the accumulated plain text.  Try each,
+-- leftmost first.  Starts in earlier chunks need not be considered:
+-- any that could reach this position was already tried, with the same
+-- local part and input position, at the boundary ending its chunk.
+pEmailAtBoundary :: [Text] -> P [Inline] -> P [Inline]
+pEmailAtBoundary (piece : rest) alt
+  | not (T.null localSpan) = foldr tryStart alt (emailStarts localSpan)
+ where
+  localSpan = T.takeWhileEnd isEmailLocalChar piece
+  tryStart sfx alt' =
+    (do more <- takeWhile isEmailLocalChar
+        il <- pEmailAutolinkRest (sfx <> more)
+        let pre = T.dropEnd (T.length sfx) piece
+        let cs' = if T.null pre then rest else pre : rest
+        prependStr cs' . (il:) <$> pInlines' []) <|> alt'
+pEmailAtBoundary _ alt = alt
+
+-- Suffixes of the given text beginning at the start of a run of
+-- letters, leftmost first: the candidate starts of an email
+-- autolink's local part.
+emailStarts :: Text -> [Text]
+emailStarts t
+  | T.null t' = []
+  | otherwise = t' : emailStarts (T.dropWhile isLetter t')
+ where
+  t' = T.dropWhile (not . isLetter) t
+
+-- Possible macro and autolink names, as (name, parser for what
+-- follows the name and ':').  Sorted by decreasing name length, so
+-- that the leftmost match within a run of plain text wins; macros
+-- come before autolink schemes of the same name.
+nestedInlineStarts :: [(Text, P Inline)]
 nestedInlineStarts =
-  sortOn (\(letters, _, _) -> negate (T.length letters)) $
-    [ (letters, T.drop (T.length letters) name, pInlineMacroTarget name)
-    | name <- M.keys inlineMacros
-    , let letters = T.takeWhile isLetter name
-    ] ++
-    [ (scheme, "", pAutolinkTarget (scheme <> ":"))
-    | scheme <- autolinkSchemes
-    ]
+  sortOn (\(name, _) -> negate (T.length name)) $
+    [ (name, pInlineMacroTarget name) | name <- M.keys inlineMacros ] ++
+    [ (scheme, pAutolinkTarget (scheme <> ":")) | scheme <- autolinkSchemes ]
 
--- The same starts indexed by the last letter of the prefix, so that a
--- letter run only has to check the few candidates that could be its
--- suffix, preserving the order of nestedInlineStarts within a bucket.
-nestedInlineStartsByLastLetter :: M.Map Char [(Text, Text, P Inline)]
-nestedInlineStartsByLastLetter =
+-- The same candidates indexed by the last character of the name, so
+-- that a ':' boundary only has to check the few candidates that could
+-- end just before it, preserving the order of nestedInlineStarts
+-- within a bucket.
+nestedInlineStartsByLastChar :: M.Map Char [(Text, P Inline)]
+nestedInlineStartsByLastChar =
   M.fromListWith (flip (++))
-    [ (T.last letters, [x]) | x@(letters, _, _) <- nestedInlineStarts ]
+    [ (T.last name, [x]) | x@(name, _) <- nestedInlineStarts ]
 
 replaceChars :: [Char] -> [Char]
 replaceChars [] = []
@@ -1687,7 +1719,8 @@ pInline prevChars = do
                '<' -> pBracedAutolink <|> pCrossReference
                '&' -> pCharacterReference
                '[' -> pBibAnchor <|> pInlineAnchor
-               -- letters are handled by pLetterRun
+               -- macros, autolinks and email autolinks are handled
+               -- at the ':' and '@' boundaries in pInlineBoundary
                _ -> mzero)
 
 pIndexEntry :: Attr -> P Inline
