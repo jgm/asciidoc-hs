@@ -1,9 +1,14 @@
 # Revision history for asciidoc-hs
 
+## 0.1.1.1 -- 2026-09-30
+
+  * Add missing test file to extra-source-files (#14).
+
 ## 0.1.1 -- 2026-08-27
 
   * Fix counter type for lowercase alpha start values.
-    `{counter:name:a}` produced UpperAlphaCounter due to a copy-paste error.
+    `{counter:name:a}` produced UpperAlphaCounter due to a copy-paste
+    error.
 
   * Fix Meta Semigroup to keep title attributes with the title.
     Both branches of the docTitleAttributes case returned m2's attributes,
@@ -14,7 +19,8 @@
 
   * Require ';' to terminate character entity references.
 
-  * Traverse both components of definition list items in generic traversals.
+  * Traverse both components of definition list items in generic
+    traversals.
 
   * Require a space or end of line after definition list markers.
 
