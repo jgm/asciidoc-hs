@@ -11,7 +11,7 @@ import qualified Data.Text.Lazy.Encoding as TEL
 import qualified Data.ByteString.Lazy as BL
 import Data.List (sort)
 import System.Directory (listDirectory)
-import System.FilePath ((</>), takeBaseName, takeExtension)
+import System.FilePath ((</>), pathSeparator, takeBaseName, takeExtension)
 import qualified Data.ByteString.Char8 as B
 import AsciiDoc
 import Text.Show.Pretty (ppShow)
@@ -79,7 +79,19 @@ toGoldenTest fp =
              " position " <> show pos <> ": " <> msg
 
   convert inText =
-    T.pack . ppShow <$> parseDocument TIO.readFile raiseError fp inText
+    T.pack . ppShow <$>
+      (parseDocument TIO.readFile raiseError fp inText
+        >>= mapBlocks (pure . portableIncludePath))
+
+  -- Include paths use the native separator, but the golden files use '/'.
+  portableIncludePath (Block attr mbtitle (Include path mbblocks)) =
+    Block attr mbtitle (Include (portablePath path) mbblocks)
+  portableIncludePath (Block attr mbtitle
+                         (IncludeListing mblang path mblines)) =
+    Block attr mbtitle (IncludeListing mblang (portablePath path) mblines)
+  portableIncludePath b = b
+
+  portablePath = map (\c -> if c == pathSeparator then '/' else c)
 
   readGoldenTest :: FilePath -> IO (T.Text, T.Text)
   readGoldenTest fp' = do
