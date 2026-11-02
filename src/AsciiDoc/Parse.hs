@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,7 +22,11 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import Data.Text (Text)
+#if MIN_VERSION_base(4,20,0)
+import Data.List (intersperse, isPrefixOf, sortOn)
+#else
 import Data.List (foldl', intersperse, isPrefixOf, sortOn)
+#endif
 import qualified Data.Text.Internal as TI
 import qualified Data.Text.Unsafe as TU
 import System.FilePath
