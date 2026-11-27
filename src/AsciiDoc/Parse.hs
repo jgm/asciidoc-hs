@@ -447,6 +447,9 @@ pDocument = do
             Just "" -> withHardBreaks
             _ -> id) $
         withBlockContext (SectionContext (minSectionLevel - 1)) pBlocks
+  -- block attribute lines at the end, with no block to attach to, are
+  -- dropped
+  skipMany pTitleOrAttribute
   skipWhile isSpace
   endOfInput
   attr <- gets docAttrs
@@ -781,9 +784,18 @@ pTitlesAndAttributes = do
 pTitleOrAttribute :: P (Either BlockTitle Attr)
 pTitleOrAttribute =
   ((Left <$> pTitle)
-    <|> (Right <$> (pAnchor <* endOfLine))
-    <|> (Right <$> (pAttributes <* endOfLine))
+    <|> (Right <$> (pAnchor <* pLineEnd))
+    <|> (Right <$> pAttributeLine)
   ) <* skipMany pBlankLine
+ where
+  pLineEnd = skipWhile (\c -> c == ' ' || c == '\t') *>
+               (endOfLine <|> endOfInput)
+  -- a block attribute line is a single line (the lines pNormalLine
+  -- rejects)
+  pAttributeLine = do
+    t <- takeWhile (not . isEndOfLine)
+    parseWith (pAttributes <* skipWhile isSpace <* endOfInput) t
+      <* (endOfLine <|> endOfInput)
 
 pAnchor :: P Attr
 pAnchor = do
