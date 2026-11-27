@@ -1,0 +1,29 @@
+[source,c] 
+----
+int x;
+----
+
+[[anchor]]	
+Paragraph.
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty
+          Nothing
+          (Listing (Just (Language "c")) [ SourceLine "int x;" [] ])
+      , Block
+          Attr
+          ( [] , fromList [ ( "id" , "anchor" ) ] )
+          Nothing
+          (Paragraph [ Inline mempty (Str "Paragraph.") ])
+      ]
+  }

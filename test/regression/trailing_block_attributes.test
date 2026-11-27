@@ -1,0 +1,19 @@
+Paragraph.
+
+[[last]]
+[discrete]
+>>>
+Document
+  { docMeta =
+      Meta
+        { docTitle = []
+        , docTitleAttributes = Nothing
+        , docAuthors = []
+        , docRevision = Nothing
+        , docAttributes = fromList [ ( "sectids" , "" ) ]
+        }
+  , docBlocks =
+      [ Block
+          mempty Nothing (Paragraph [ Inline mempty (Str "Paragraph.") ])
+      ]
+  }
